@@ -102,7 +102,9 @@ shinyUI(pageWithSidebar(
     tabsetPanel(
       # Welcome tab
       tabPanel("About",
-               HTML('<p>This application allows users to generate customized Checkerboards with Plots can be exported as eps, pdf and svg files.</p>'),
+               HTML('<p>This application allows users to generate customized Checkerboards to estimate synergistic and antagonistic effects
+                    and calculate Bliss Independence and Highest Single Agent values. 
+                    Plots can be exported as eps, pdf and svg files.</p>'),
                h5("Software references"),
                HTML('<p>R Development Core Team. <i><a href="http://www.r-project.org/">R</a>:  A Language and Environment for Statistical Computing.</i> R Foundation for Statistical Computing, Vienna (2013) <br>
 				RStudio and Inc. <i><a href="http://www.rstudio.com/shiny/">shiny</a>: Web Application Framework for R.</i> R package version 0.5.0 (2013) <br>'),
