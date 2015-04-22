@@ -230,7 +230,7 @@ layout(matrix(data=c(1,2), nrow=2, ncol=1), widths=c(1,1), heights=c(4,1))
 # -- produce surface plot                                                #
 #                                                                        #
 ##########################################################################
-raw_plot <- function(xx,yl,xl,zl,title,theta,ltheta) {
+raw_plot <- function(xx,yl,xl,zl,title,theta,ltheta,cex.T,cex.L,cex.A) {
 
   collut <- c()
   z <- as.matrix(xx)
@@ -256,8 +256,8 @@ raw_plot <- function(xx,yl,xl,zl,title,theta,ltheta) {
   #temp <- 1 + 100*(z_tmp-min(z_tmp)) / diff(range(z_tmp))
   mapcol <- ColorRamp[temp]
   mapcol2 <- matrix(mapcol,nrow=nrow(z), byrow=FALSE)
-
-  persp(x,y,z, xlab=xl,ylab=yl,zlab=zl,main=title,cex.main=1,zlim=c(0,1),ticktype="simple", theta=theta, phi=ltheta, expand=0.5, shade=0.2, col=mapcol2[2:nrow(z),2:ncol(z)], ltheta=-60,border=0.1,nticks=8)
+  par(cex.axis=cex.A*.1,cex.lab=cex.L*.1,cex.main=cex.T*.1)
+  persp(x,y,z, xlab=xl,ylab=yl,zlab=zl,main=title,zlim=c(0,1),ticktype="simple", theta=theta, phi=ltheta, expand=0.5, shade=0.2, col=mapcol2[2:nrow(z),2:ncol(z)], ltheta=-60,border=0.1,nticks=8)
  
 }
 

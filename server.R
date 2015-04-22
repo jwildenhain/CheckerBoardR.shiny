@@ -92,7 +92,7 @@ shinyServer(function(input, output) {
     # *** Generate xyz raw data plot ***    
     if(input$plotType=='0'){
        if (showplot == TRUE) {
-          raw_plot(xx,input$myXlab,input$myYlab,input$myZlab,input$myTitle,input$obs,input$obsv)
+          raw_plot(xx,input$myXlab,input$myYlab,input$myZlab,input$myTitle,input$obs,input$obsv,input$cexTitle,input$cexAxislabel,input$cexAxis)
        } else {
           my.stat <- data.frame(stats="NA")
        }

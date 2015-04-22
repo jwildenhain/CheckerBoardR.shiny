@@ -80,7 +80,7 @@ shinyUI(pageWithSidebar(
                      textInput("myXlab", "X-axis label:", value=c("Drug A")),
                      textInput("myYlab", "Y-axis label:", value=c("Drug B")),
                      textInput("myZlab", "Z-axis label:", value=c("Absorbance")),
-                     textInput("myTitle", "Boxplot title:", value=c(""))
+                     textInput("myTitle", "Title:", value=c(""))
  
     ),
     checkboxInput("plotSize", "Adjust plot size", FALSE),
@@ -90,9 +90,9 @@ shinyUI(pageWithSidebar(
     ),
     checkboxInput("fontSizes", "Change font sizes", FALSE),
     conditionalPanel(condition="input.fontSizes",
-                     numericInput("cexTitle", "Title font size:", value=14),
-                     numericInput("cexAxislabel", "Axis label size:", value=14),
-                     numericInput("cexAxis", "Axis font size:", value=12)
+                     numericInput("cexTitle", "Title font size:", value=10),
+                     numericInput("cexAxislabel", "Axis label size:", value=10),
+                     numericInput("cexAxis", "Axis font size:", value=10)
     )
     )
   ),
