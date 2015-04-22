@@ -118,11 +118,11 @@ shinyServer(function(input, output) {
           if(input$myOrientation==1) { # address Antagonism
             bliss.show <- bliss
             bliss.show[bliss.show > 0] <-0
-            myImagePlotReverse(abs(bliss.show),reverse=-1,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle="Bliss Antagonism") # =-1 
+            myImagePlotReverse(abs(bliss.show),reverse=-1,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle="Bliss Antagonism",cex.T=input$cexTitle,cex.L=input$cexAxislabel,cex.A=input$cexAxis) # =-1 
           } else {
             bliss.show <- bliss
             bliss.show[bliss.show < 0] <-0
-            myImagePlotReverse(bliss.show,reverse,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle="Bliss Synergy")
+            myImagePlotReverse(bliss.show,reverse,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle="Bliss Synergy",cex.T=input$cexTitle,cex.L=input$cexAxislabel,cex.A=input$cexAxis)
           }
         }
         my.bliss <- max_tmp[max_bliss$y,max_bliss$x] - ( max_tmp[1,max_bliss$x] + max_tmp[max_bliss$y,1] - (max_tmp[1,max_bliss$x] * max_tmp[max_bliss$y,1]) )
@@ -143,11 +143,11 @@ shinyServer(function(input, output) {
           if(input$myOrientation==1) { # address Antagonism
             hsa.show <- hsa
             hsa.show[hsa.show > 0] <-0
-            myImagePlotReverse(abs(hsa.show),reverse=-1,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle="HSA Antagonism")
+            myImagePlotReverse(abs(hsa.show),reverse=-1,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle="HSA Antagonism",cex.T=input$cexTitle,cex.L=input$cexAxislabel,cex.A=input$cexAxis)
           } else { # synergism
             hsa.show <- hsa
             hsa.show[hsa.show < 0] <-0
-            myImagePlotReverse(hsa.show,reverse,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle="HSA Synergy")
+            myImagePlotReverse(hsa.show,reverse,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle="HSA Synergy",cex.T=input$cexTitle,cex.L=input$cexAxislabel,cex.A=input$cexAxis)
           }
         }
         my.hsa <- max_tmp[max_hsa$y,max_hsa$x] - ( max_tmp[1,max_hsa$x] + max_tmp[max_hsa$y,1] - (max_tmp[1,max_hsa$x] * max_tmp[max_hsa$y,1]) )
@@ -158,9 +158,9 @@ shinyServer(function(input, output) {
         my.stat <- data.frame(Max_Inhibition_AB=max_real,Idx_A=max_inh$x,Idx_B=max_inh$y,Max_Inhibition_A=max_tmp[1,max_tmp_x],Max_Inhibition_B=max_tmp[max_tmp_y,1],Max_Inhibition_Expected_AB=max_real_exp,Idx_Exp_A=max_tmp_x,Idx_Exp_B=max_tmp_y)
         if (showplot ==TRUE) {
           if(input$myOrientation==1) {
-            myImagePlotReverse(xx,reverse=-1,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle=input$myZlab)
+            myImagePlotReverse(xx,reverse=-1,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle=input$myZlab,cex.T=input$cexTitle,cex.L=input$cexAxislabel,cex.A=input$cexAxis)
           } else {
-            myImagePlotReverse(xx,reverse=1,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle=input$myZlab)          
+            myImagePlotReverse(xx,reverse=1,xLab=input$myXlab,yLab=input$myYlab, title=input$myTitle,cTitle=input$myZlab,cex.T=input$cexTitle,cex.L=input$cexAxislabel,cex.A=input$cexAxis)          
           }
         }
       }

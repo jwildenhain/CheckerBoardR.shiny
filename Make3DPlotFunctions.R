@@ -61,7 +61,15 @@ myImagePlotReverse <- function(x, ...) {
     if( !is.null(Lst$reverse) ){
        reverse <- Lst$reverse
     }
-
+    if( !is.null(Lst$cex.T) ){
+      cex.T <- Lst$cex.T*.1
+    }
+    if( !is.null(Lst$cex.L) ){
+      cex.L <- Lst$cex.L*.1
+    }
+    if( !is.null(Lst$cex.A) ){
+      cex.A <- Lst$cex.A*.1
+    }
   }
 # check for null values
 if( is.null(xLabels) ){
@@ -106,14 +114,14 @@ layout(matrix(data=c(1,2), nrow=2, ncol=1), widths=c(1,1), heights=c(4,1))
  x <- x[reverse,]
 
  # Data Map
- par(mar = c(4,6,3.5,4))
+ par(mar = c(4,6,3.5,4),cex.lab=cex.L,cex.main=cex.T)
  image(1:length(xLabels), 1:length(yLabels), t(x), col=ColorRamp, xlab=xLab,
  ylab=yLab, axes=FALSE, zlim=c(min,max))
  if( !is.null(title) ){
     title(main=title)
  }
- axis(BELOW<-1, at=1:length(xLabels), labels=xLabels, cex.axis=0.7)
- axis(LEFT <-2, at=1:length(yLabels), labels=yLabels, las= HORIZONTAL<-1,cex.axis=0.7)
+ axis(BELOW<-1, at=1:length(xLabels), labels=xLabels, cex.axis=cex.A)
+ axis(LEFT <-2, at=1:length(yLabels), labels=yLabels, las= HORIZONTAL<-1,cex.axis=cex.A)
 
  # Color Scale
  par(mar = c(4,6,2.5,4))
@@ -121,7 +129,7 @@ layout(matrix(data=c(1,2), nrow=2, ncol=1), widths=c(1,1), heights=c(4,1))
       matrix(data=ColorLevels, nrow=length(ColorLevels),ncol=1),
       col=ColorRamp,
       xlab=cTitle,ylab="",
-      yaxt="n",cex.axis=0.7)
+      yaxt="n",cex.axis=cex.A)
 
  layout(1)
  return(max_impact)
