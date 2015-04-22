@@ -102,7 +102,7 @@ shinyUI(pageWithSidebar(
     tabsetPanel(
       # Welcome tab
       tabPanel("About",
-               HTML('<p>This application allows users to generate customized Checkerboards to estimate synergistic and antagonistic effects
+               HTML('<p>This application allows users to generate customized checkerboards to estimate synergistic and antagonistic effects
                     and calculate Bliss Independence and Highest Single Agent values. 
                     Plots can be exported as eps, pdf and svg files.</p>'),
                h5("Software references"),
