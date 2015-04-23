@@ -1,7 +1,7 @@
 # CheckerBoardR.shiny
 ##### Shiny Webportal to perform Synergy/Antagonism calculation using Bliss Independence and Highest Single Agent (HSA)
 
-This checkerboard shiny app http://tyerslab.bio.ed.ac.uk:3838/CheckerboardR.shiny/ allows to:
+This checkerboard shiny app http://chemgrid.org:3838/checkerboardr/ allows to:
 
 * upload your data as file or paste your data into your webbrowser (data needs to have at least 2 rows and columns)
 * will visualize the data as a 3D checkerboard or 2D heatmap for the raw data 
