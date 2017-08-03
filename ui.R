@@ -1,4 +1,5 @@
 
+
 # This is the user-interface definition of a Shiny web application.
 # You can find out more about building applications with Shiny here:
 # 
@@ -28,8 +29,7 @@ shinyUI(pageWithSidebar(
                      h4("Enter data"),
                      radioButtons("dataInput", "", list("Load sample data"=1,"Upload file"=2,"Paste data"=3)),
                      conditionalPanel(condition="input.dataInput=='1'",
-                                      h5("Load sample data:"),
-                                      radioButtons("sampleData", "Load sample data", list("Example 1"=1,"Example 2"=2))
+                                      radioButtons("sampleData", "Load sample data", list("Example data 1"=1,"Example data 2"=2, "Fancy Sinus"=3, "Fancy Cos"=5, "Simple plane"=4))
                      ),
                      conditionalPanel(condition="input.dataInput=='2'",
                                       h5("Upload delimited text file: "),
@@ -54,6 +54,7 @@ shinyUI(pageWithSidebar(
     checkboxInput("inverseData", "Inverse data matrix", FALSE),
     checkboxInput("flipDataX", "Flip data by x-axis", FALSE),
     checkboxInput("flipDataY", "Flip data by y-axis", FALSE),
+    checkboxInput("flipDataZ", "Flip data by z-axis", FALSE),
     radioButtons("plotType", "", list("3D"=0, "2D"=1)),
     conditionalPanel(condition="input.plotType=='0'",
                      h5("Rotate view:"),

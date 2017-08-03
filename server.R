@@ -5,6 +5,9 @@
 # http://www.rstudio.com/shiny/
 #
 
+#
+#install.packages("RColorBrewer")
+
 library(shiny)
 source("Make3DPlotFunctions.R")
 
@@ -18,9 +21,15 @@ shinyServer(function(input, output) {
   dataM <- reactive({
     if(input$dataInput==1){
       if(input$sampleData==1){
-        data<-read.table("testData3.tab", sep="\t", header=FALSE)			
+          data<-read.table("testData3.tab", sep="\t", header=FALSE)			
+      } else if (input$sampleData==2){
+          data<-read.table("testData.tab", sep="\t", header=TRUE,row.names=1)		
+      } else if (input$sampleData==3){
+          data<-read.table("sinus.csv", sep=",", header=FALSE)
+      } else if (input$sampleData==4){
+        data<-read.table("simple.csv", sep=",", header=TRUE, row.names=1)
       } else {
-        data<-read.table("testData.tab", sep="\t", header=TRUE,row.names=1)		
+        data<-read.table("cos.csv", sep=",", header=TRUE, row.names=1)
       }
     } else if(input$dataInput==2){
       inFile <- input$upload
@@ -86,6 +95,9 @@ shinyServer(function(input, output) {
     }
     if(input$flipDataY==TRUE){
       xx <- create_y_flip(xx)
+    }
+    if(input$flipDataZ==TRUE){
+      xx <- create_z_flip(xx)
     }
     
     par(mar=c(2.1, 2.1, 4.1, 2.1))
