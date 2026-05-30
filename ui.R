@@ -1,136 +1,347 @@
-
-
-# This is the user-interface definition of a Shiny web application.
-# You can find out more about building applications with Shiny here:
-# 
-# http://www.rstudio.com/shiny/
+#
+# ui.R
+# Beautiful, premium glassmorphic user interface for CheckerBoardR.shiny.
+# Highly interactive controls for robust synergy calculation models.
 #
 
 library(shiny)
+library(plotly)
 
-shinyUI(pageWithSidebar(
-  
-  # Application title
-  headerPanel("CheckerboardR: a web-tool for generation of checkerboards",
-              tags$head(tags$style(type="text/css", "label.radio { display: inline-block; }", ".radio input[type=\"radio\"] { float: none; }"),
-              tags$style(type="text/css", "select { max-width: 200px; }"),
-              tags$style(type="text/css", "textarea { max-width: 185px; }"),
-              tags$style(type="text/css", ".jslider { max-width: 200px; }"),
-              tags$style(type='text/css', ".well { max-width: 330px; }"),
-              tags$style(type='text/css', ".span4 { max-width: 330px; }"))                       
+shinyUI(fluidPage(
+  # Include modern typography and high-end visual stylesheets
+  tags$head(
+    tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"),
+    tags$style(HTML("
+      /* Design System Variables */
+      :root {
+        --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #111827 50%, #030712 100%);
+        --primary-gradient: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        --accent-gradient: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+        --glass-bg: rgba(17, 24, 39, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --text-main: #f3f4f6;
+        --text-muted: #9ca3af;
+      }
+      
+      body {
+        background: var(--bg-gradient);
+        font-family: 'Outfit', 'Inter', sans-serif;
+        color: var(--text-main);
+        min-height: 100vh;
+        padding-top: 20px;
+      }
+      
+      h1, h2, h3, h4, h5, h6 {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 600;
+        color: #ffffff;
+      }
+      
+      .title-container {
+        text-align: center;
+        margin-bottom: 40px;
+        padding: 20px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(12px);
+      }
+      
+      .title-header {
+        font-size: 2.5rem;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0 0 10px 0;
+      }
+      
+      .title-sub {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+      }
+      
+      /* Glassmorphic Sidebars & Cards */
+      .well {
+        background: var(--glass-bg) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 20px !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important;
+        backdrop-filter: blur(12px) !important;
+        color: var(--text-main) !important;
+        padding: 24px !important;
+        margin-bottom: 24px;
+      }
+      
+      .tab-content {
+        padding: 24px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-top: none;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(12px);
+      }
+      
+      /* Navigation Tabs Modernization */
+      .nav-tabs {
+        border-bottom: 1px solid var(--glass-border);
+      }
+      
+      .nav-tabs > li > a {
+        color: var(--text-muted) !important;
+        font-weight: 500;
+        border: 1px solid transparent !important;
+        border-radius: 12px 12px 0 0 !important;
+        padding: 12px 20px;
+        transition: all 0.3s ease;
+      }
+      
+      .nav-tabs > li.active > a, .nav-tabs > li.active > a:hover {
+        background: var(--primary-gradient) !important;
+        color: #ffffff !important;
+        border: 1px solid var(--glass-border) !important;
+        border-bottom-color: transparent !important;
+        box-shadow: 0 -4px 12px rgba(14, 165, 233, 0.2);
+      }
+      
+      .nav-tabs > li > a:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #ffffff !important;
+      }
+      
+      /* Beautiful Form Control Overrides */
+      .form-control, input[type='text'], input[type='number'], select, textarea {
+        background: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 10px !important;
+        color: #ffffff !important;
+        padding: 8px 12px !important;
+        box-shadow: none !important;
+        transition: all 0.3s ease !important;
+      }
+      
+      .form-control:focus, input[type='text']:focus, select:focus {
+        border-color: #0ea5e9 !important;
+        box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25) !important;
+      }
+      
+      /* Stylish Action Buttons */
+      .btn-primary, .btn-default, .action-button {
+        background: var(--primary-gradient) !important;
+        border: none !important;
+        border-radius: 10px !important;
+        color: #ffffff !important;
+        font-weight: 600;
+        padding: 10px 20px !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 14px rgba(14, 165, 233, 0.3) !important;
+      }
+      
+      .btn-primary:hover, .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5) !important;
+      }
+      
+      /* Download Buttons */
+      .shiny-download-link {
+        background: var(--accent-gradient) !important;
+        border: none !important;
+        border-radius: 10px !important;
+        color: #ffffff !important;
+        font-weight: 600;
+        padding: 10px 16px !important;
+        display: inline-block;
+        margin-right: 8px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 14px rgba(236, 72, 153, 0.3);
+      }
+      
+      .shiny-download-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5);
+        color: #ffffff !important;
+        text-decoration: none;
+      }
+      
+      /* Custom radio buttons and checkbox spacing */
+      .checkbox, .radio {
+        margin-top: 12px;
+        margin-bottom: 12px;
+      }
+      
+      label {
+        font-weight: 500;
+        color: #e5e7eb;
+      }
+      
+      /* Dynamic layout details */
+      .shiny-plot-output {
+        border-radius: 16px;
+        overflow: hidden;
+      }
+    "))
   ),
   
-  # Sidebar with a slider input for number of observations
-  sidebarPanel(
-    conditionalPanel(condition="input.tabs1=='About'",
-                     h4("Introduction")
-    ),
-    conditionalPanel(condition="input.tabs1=='Data upload'",
-                     h4("Enter data"),
-                     radioButtons("dataInput", "", list("Load sample data"=1,"Upload file"=2,"Paste data"=3)),
-                     conditionalPanel(condition="input.dataInput=='1'",
-                                      radioButtons("sampleData", "Load sample data", list("Example data 1"=1,"Example data 2"=2, "Fancy Sinus"=3, "Fancy Cos"=5, "Simple plane"=4))
-                     ),
-                     conditionalPanel(condition="input.dataInput=='2'",
-                                      h5("Upload delimited text file: "),
-                                      fileInput("upload", "", multiple = FALSE),
-                                      checkboxInput("fileHeader", "File with row and column concentrations", FALSE),
-                                      radioButtons("fileSepDF", "Delimiter:", list("Comma"=1,"Tab"=2,"Semicolon"=3)),#, "Space"=4))
-                                      HTML('<p>Data in <a href="http://en.wikipedia.org/wiki/Delimiter-separated_values">delimited text files </a> can be separated by comma, tab or semicolon. 
-				For example, Excel data can be exported in .csv (comma separated) or .tab (tab separated) format. </p>')
-                     ),
-                     conditionalPanel(condition="input.dataInput=='3'",
-                                      h5("Paste data below:"),
-                                      #				HTML('<input type="button" value="Clear" onclick="javascript:eraseText();">'),
-                                      #			    HTML('<textarea id='output' rows=20 cols=90></textarea>'),
-                                      #			    HTML('<textarea id="output" rows="3" cols="40">Default value</textarea>'),
-                                      tags$textarea(id="myData", rows=10, cols=5, ""),
-                                      actionButton('clearText_button','Clear data'),
-                                      radioButtons("fileSepP", "Separator:", list("Comma"=1,"Tab"=2,"Semicolon"=3))
-                     )
-    ),
-    conditionalPanel(condition="input.tabs1=='Data visualization'",
-                     
-    checkboxInput("inverseData", "Inverse data matrix", FALSE),
-    checkboxInput("flipDataX", "Flip data by x-axis", FALSE),
-    checkboxInput("flipDataY", "Flip data by y-axis", FALSE),
-    checkboxInput("flipDataZ", "Flip data by z-axis", FALSE),
-    radioButtons("plotType", "", list("3D"=0, "2D"=1)),
-    conditionalPanel(condition="input.plotType=='0'",
-                     h5("Rotate view:"),
-                     sliderInput("obs", 
-                                 "Horizontal:", 
-                                 min = 1, 
-                                 max = 360, 
-                                 value = 110),
-                     sliderInput("obsv", 
-                                 "Vertical:", 
-                                 min = 1, 
-                                 max = 360, 
-                                 value = 30)                     
-    ),
-    conditionalPanel(condition="input.plotType=='1'",
-                     h5("Algorithm choices:"),
-                     radioButtons("otherPlotType", "", list("Bliss"=0, "HSA"=1, "Data"=2)),
-                     h5("Schema for Synergy or Antagonism:"),
-                     radioButtons("myOrientation", "", list("Synergism"=0, "Antagonism"=1))
-                     
-    ),
-    checkboxInput("labelsTitle", "Modify labels and title", FALSE),
-    conditionalPanel(condition="input.labelsTitle",
-                     textInput("myXlab", "X-axis label:", value=c("Drug A")),
-                     textInput("myYlab", "Y-axis label:", value=c("Drug B")),
-                     textInput("myZlab", "Z-axis label:", value=c("Absorbance")),
-                     textInput("myTitle", "Title:", value=c(""))
- 
-    ),
-    checkboxInput("plotSize", "Adjust plot size", FALSE),
-    conditionalPanel(condition="input.plotSize",
-                     numericInput("myHeight", "Plot height:", value=550),
-                     numericInput("myWidth", "Plot width:", value=750)
-    ),
-    checkboxInput("fontSizes", "Change font sizes", FALSE),
-    conditionalPanel(condition="input.fontSizes",
-                     numericInput("cexTitle", "Title font size:", value=10),
-                     numericInput("cexAxislabel", "Axis label size:", value=10),
-                     numericInput("cexAxis", "Axis font size:", value=10)
-    )
-    )
+  # Page Header Banner
+  div(class = "title-container",
+      h1(class = "title-header", "CheckerboardR Synergy Calculator"),
+      p(class = "title-sub", "Next-generation web portal to calculate drug combination interaction landscapes (HSA, Bliss, Loewe, and ZIP) with publication-quality visualizations")
   ),
   
-  # Show a plot of the generated distribution
-  mainPanel(
-    tabsetPanel(
-      # Welcome tab
-      tabPanel("About",
-               HTML('<p>This application allows users to generate customized checkerboards to estimate synergistic and antagonistic effects
-                    and calculate Bliss Independence and Highest Single Agent values. 
-                    Plots can be exported as eps, pdf and svg files.</p>'),
-               h5("Software references"),
-               HTML('<p>R Development Core Team. <i><a href="http://www.r-project.org/">R</a>:  A Language and Environment for Statistical Computing.</i> R Foundation for Statistical Computing, Vienna (2013) <br>
-				RStudio and Inc. <i><a href="http://www.rstudio.com/shiny/">shiny</a>: Web Application Framework for R.</i> R package version 0.5.0 (2013) <br>'),
-               h5("Further references"),
-               h6("This application was created by jw. This application uses the ", 
-                  a("shiny package from RStudio", href="http://www.rstudio.com/shiny/"), ".")
-               ),
-      # Data upload tab
-      tabPanel("Data upload", tableOutput("filetable"),
-               h6("This application was created by jw. This application uses the ", 
-                  a("shiny package from RStudio", href="http://www.rstudio.com/shiny/"), ".")
+  sidebarLayout(
+    sidebarPanel(
+      # Controls for Data Upload Tab
+      conditionalPanel(
+        condition = "input.tabs1 == 'Data upload'",
+        h4("Data Input Configuration"),
+        radioButtons("dataInput", "Source:", list("Sample Data" = 1, "Upload File" = 2, "Paste Data" = 3)),
+        
+        conditionalPanel(
+          condition = "input.dataInput == '1'",
+          radioButtons("sampleData", "Sample Datasets:", 
+                       list("Anti-fungal Screening (testData3.tab)" = 1,
+                            "Anticancer Agent Grid (testData.tab)" = 2, 
+                            "Fancy Sinus Wave" = 3, 
+                            "Fancy Cosine Surface" = 5, 
+                            "Simple Linear Plane" = 4))
+        ),
+        
+        conditionalPanel(
+          condition = "input.dataInput == '2'",
+          fileInput("upload", "Upload delimited file (.csv, .tab, .txt):", multiple = FALSE),
+          checkboxInput("fileHeader", "Header contains concentration levels", TRUE),
+          radioButtons("fileSepDF", "Delimiter:", list("Comma (,)" = 1, "Tab (\\t)" = 2, "Semicolon (;)" = 3))
+        ),
+        
+        conditionalPanel(
+          condition = "input.dataInput == '3'",
+          h5("Paste matrix below (columns = Drug A, rows = Drug B):"),
+          tags$textarea(id = "myData", rows = 8, cols = 30, ""),
+          br(),
+          actionButton('clearText_button', 'Clear Field'),
+          radioButtons("fileSepP", "Separator:", list("Comma (,)" = 1, "Tab (\\t)" = 2, "Semicolon (;)" = 3))
+        ),
+        
+        hr(),
+        h4("Data Preprocessing"),
+        radioButtons("dataType", "Input Data Representation:",
+                     list("Cell Viability / OD (requires control normalization)" = "viability",
+                          "Normalized Inhibition / Cell Death percentage" = "inhibition")),
+        
+        conditionalPanel(
+          condition = "input.dataType == 'viability'",
+          h5("Control Well Coordinates:"),
+          numericInput("ctrlRow", "Control Row (1-indexed):", value = 1, min = 1),
+          numericInput("ctrlCol", "Control Column (1-indexed):", value = 1, min = 1)
+        )
       ),
-      # Raw tab
-      #tabPanel("Data visualization", downloadButton("downloadPlotEPS", "Download eps-file"),
-      #  plotOutput("distPlot")
-      #),
-      tabPanel("Data visualization", 
-               downloadButton("downloadPlotEPS", "Download eps-file"),
-               downloadButton("downloadPlotPDF", "Download pdf-file"),
-               downloadButton("downloadPlotSVG", "Download svg-file"),
-               plotOutput("rawPlot", height='100%', width='100%'),
-               h4("Data statistics"), 
-               tableOutput("checkerboardStatsTable")
-      ),
-      id="tabs1"
-    ) # tabset panel
+      
+      # Controls for Data Visualization Tab
+      conditionalPanel(
+        condition = "input.tabs1 == 'Data visualization'",
+        h4("Model & Algorithmic Choices"),
+        selectInput("synergyModel", "Synergy Model Choice:",
+                    choices = list("Bliss Independence" = "Bliss",
+                                   "Highest Single Agent (HSA)" = "HSA",
+                                   "Loewe Additivity" = "Loewe",
+                                   "Zero Interaction Potency (ZIP)" = "ZIP",
+                                   "Raw Input Data" = "Data")),
+        
+        conditionalPanel(
+          condition = "input.synergyModel != 'Data'",
+          radioButtons("myOrientation", "Biological Interpretation:",
+                       list("Synergism (Positive Synergy = Red)" = "synergism",
+                            "Antagonism (Antagonism = Blue)" = "antagonism"))
+        ),
+        
+        checkboxInput("useFit", "Apply 4PL Hill Single-Agent Curve Fitting", TRUE),
+        
+        hr(),
+        h4("Visualization Engine"),
+        selectInput("plotEngine", "Plotting Engine:",
+                    choices = list("2D Heatmap (ggplot2 Contoured)" = "2d_ggplot",
+                                   "3D Surface (Interactive Plotly)" = "3d_plotly",
+                                   "1D Single-Agent Fit Curves" = "1d_curves",
+                                   "3D Static Fallback (Base R)" = "3d_base")),
+        
+        selectInput("themePreset", "Publication Style Theme:",
+                    choices = list("Nature (Classic Grey)" = "Nature",
+                                   "Science (High-Contrast White)" = "Science",
+                                   "The Economist (Sleek Light Blue)" = "The Economist",
+                                   "Financial Times (Warm Salmon)" = "Financial Times")),
+        
+        hr(),
+        checkboxInput("labelsTitle", "Customize Labels & Title", FALSE),
+        conditionalPanel(
+          condition = "input.labelsTitle",
+          textInput("myXlab", "X-axis Label (Drug A):", value = "Drug A"),
+          textInput("myYlab", "Y-axis Label (Drug B):", value = "Drug B"),
+          textInput("myTitle", "Custom Plot Title:", value = "")
+        ),
+        
+        checkboxInput("plotSize", "Adjust Export Dimensions", FALSE),
+        conditionalPanel(
+          condition = "input.plotSize",
+          numericInput("myHeight", "Height (pixels):", value = 550, min = 200),
+          numericInput("myWidth", "Width (pixels):", value = 750, min = 200)
+        )
+      )
+    ),
+    
+    mainPanel(
+      tabsetPanel(
+        tabPanel("About",
+                 h3("Welcome to CheckerboardR Synergy Calculator"),
+                 p("CheckerboardR is a professional, high-performance web tool designed for pharmacologists and cancer researchers to analyze combined drug screens. By uploading raw cell viability or optical density (OD) readings from multi-well plates, the tool calculates complete interaction surfaces to determine if a combination is synergistic, additive, or antagonistic."),
+                 h4("Key Features"),
+                 tags$ul(
+                   tags$li("Flexible support for all four reference models: Highest Single Agent (HSA), Bliss Independence, Loewe Additivity, and Zero Interaction Potency (ZIP)."),
+                   tags$li("Zero-dependency robust single-agent 4-parameter logistic (4PL) Hill curve fitting with linear monotonic interpolation fallbacks."),
+                   tags$li("Stunning interactive 3D WebGL visualizations via Plotly and high-resolution 2D contoured heatmaps using ggplot2."),
+                   tags$li("Export vectors directly in EPS, PDF, and SVG formats matching styling guidelines from premier scientific journals.")
+                 ),
+                 br(),
+                 h5("Academic & Formula References"),
+                 p(HTML("Borisy A, Keith C, et al. <i>Multicomponent therapeutics for networked systems.</i> Nat Rev Drug Discov. 2005;4(1):71-78.<br>"),
+                   HTML("Yadav B, et al. <i>Zero Interaction Potency (ZIP) model for drug combinations.</i> Comput Struct Biotechnol J. 2015;13:504-513."))
+        ),
+        
+        tabPanel("Data upload", 
+                 h4("Uploaded Matrix Preview"),
+                 p("A preview of the first 100 rows/columns of your uploaded matrix is displayed below. Ensure column names and row names represent concentration levels:"),
+                 div(style = "overflow-x: auto; background-color: rgba(15, 23, 42, 0.4); border-radius: 12px; padding: 12px; border: 1px solid var(--glass-border);",
+                     tableOutput("filetable")
+                 )
+        ),
+        
+        tabPanel("Data visualization",
+                 div(style = "margin-bottom: 20px;",
+                     downloadButton("downloadPlotPDF", "Download PDF Vector"),
+                     downloadButton("downloadPlotSVG", "Download SVG Vector"),
+                     downloadButton("downloadPlotEPS", "Download EPS Vector")
+                 ),
+                 
+                 # Dynamic render UI depending on selection
+                 conditionalPanel(
+                   condition = "input.plotEngine == '3d_plotly'",
+                   plotlyOutput("plotlyPlot", height = "550px")
+                 ),
+                 conditionalPanel(
+                   condition = "input.plotEngine != '3d_plotly'",
+                   plotOutput("ggplotPlot", height = "100%", width = "100%")
+                 ),
+                 
+                 br(),
+                 h4("Computed Synergy Summary Statistics"),
+                 div(style = "overflow-x: auto; background-color: rgba(15, 23, 42, 0.4); border-radius: 12px; padding: 12px; border: 1px solid var(--glass-border);",
+                     tableOutput("checkerboardStatsTable")
+                 )
+        ),
+        
+        id = "tabs1"
+      )
+    )
   )
 ))
