@@ -5,6 +5,8 @@ CheckerBoardR.shiny is a high-performance, premium web portal and modeling platf
 
 Online Portal: http://chemgrid.org:3838/checkerboardr/
 
+![CheckerBoardR 3D Plotly Synergy Surface](screenshot_3d_plotly.png)
+
 ---
 
 ## 🚀 Key Features in v2.0.0
