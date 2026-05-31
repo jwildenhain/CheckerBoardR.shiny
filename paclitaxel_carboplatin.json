@@ -1,0 +1,21 @@
+{
+  "drug_a": "Paclitaxel",
+  "drug_b": "Carboplatin",
+  "concentrations_a": [0.0, 0.25, 0.5, 1.0, 2.0, 4.0],
+  "concentrations_b": [0.0, 5.0, 10.0, 20.0, 40.0, 80.0],
+  "data_type": "viability",
+  "matrix": [
+    [1.00, 0.95, 0.90, 0.82, 0.70, 0.55],
+    [0.92, 0.88, 0.82, 0.73, 0.60, 0.42],
+    [0.85, 0.80, 0.72, 0.61, 0.48, 0.32],
+    [0.72, 0.65, 0.58, 0.45, 0.35, 0.20],
+    [0.55, 0.48, 0.40, 0.30, 0.22, 0.12],
+    [0.38, 0.30, 0.22, 0.15, 0.10, 0.05]
+  ],
+  "settings": {
+    "synergy_model": "Bliss",
+    "plot_engine": "2d_ggplot",
+    "theme_preset": "Nature",
+    "orientation": "synergism"
+  }
+}

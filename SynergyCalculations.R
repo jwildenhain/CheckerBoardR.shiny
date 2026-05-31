@@ -152,12 +152,40 @@ get_single_agent_curve <- function(conc, resp, use_fit = TRUE) {
     par <- fit_4pl(conc, resp)
   }
   
+  # Pre-filter out NAs and aggregate coordinates to avoid formulas in loops
+  valid_idx <- !is.na(conc) & !is.na(resp)
+  c_valid <- conc[valid_idx]
+  r_valid <- resp[valid_idx]
+  
+  agg_pred_x <- numeric(0)
+  agg_pred_y <- numeric(0)
+  agg_inv_x <- numeric(0)
+  agg_inv_y <- numeric(0)
+  
+  if (length(c_valid) >= 2) {
+    # Predict aggregation: x = conc (c_valid), y = resp (r_valid)
+    agg_pred <- aggregate(r_valid, list(c_valid), FUN = mean)
+    agg_pred_x <- agg_pred$Group.1
+    agg_pred_y <- agg_pred$x
+    
+    # Inverse aggregation: x = resp (r_valid), y = conc (c_valid)
+    agg_inv <- aggregate(c_valid, list(r_valid), FUN = mean)
+    agg_inv_x <- agg_inv$Group.1
+    agg_inv_y <- agg_inv$x
+  }
+  
   predict_fn <- function(x) {
     if (!is.null(par)) {
       predict_4pl(x, par)
     } else {
       # Monotonic linear interpolation fallback
-      approx(x = conc, y = resp, xout = x, rule = 2)$y
+      if (length(c_valid) >= 2 && length(agg_pred_x) >= 2) {
+        approx(x = agg_pred_x, y = agg_pred_y, xout = x, rule = 2)$y
+      } else if (length(c_valid) >= 1) {
+        rep(r_valid[1], length(x))
+      } else {
+        rep(0, length(x))
+      }
     }
   }
   
@@ -166,12 +194,20 @@ get_single_agent_curve <- function(conc, resp, use_fit = TRUE) {
       inverse_4pl(y, par)
     } else {
       # Monotonic linear interpolation fallback
-      approx(x = resp, y = conc, xout = y, rule = 2)$y
+      if (length(c_valid) >= 2 && length(agg_inv_x) >= 2) {
+        approx(x = agg_inv_x, y = agg_inv_y, xout = y, rule = 2)$y
+      } else if (length(c_valid) >= 1) {
+        rep(c_valid[1], length(y))
+      } else {
+        rep(0, length(y))
+      }
     }
   }
   
   list(predict = predict_fn, inverse = inverse_fn, par = par)
 }
+
+
 
 # Complete Synergy Calculator Function
 calculate_synergy <- function(xx, data_type = "viability", use_fit = TRUE, control_row = 1, control_col = 1) {

@@ -7,7 +7,24 @@
 library(ggplot2)
 library(plotly)
 library(RColorBrewer)
-source("SynergyCalculations.R")
+# Helper to reactively flip x, y, and z dimensions of matrices for custom views
+apply_plot_flips <- function(mat, conc_A, conc_B, flip_x = FALSE, flip_y = FALSE, flip_z = FALSE) {
+  if (flip_x) {
+    # Reverse columns
+    mat <- mat[, ncol(mat):1, drop = FALSE]
+    conc_A <- rev(conc_A)
+  }
+  if (flip_y) {
+    # Reverse rows
+    mat <- mat[nrow(mat):1, , drop = FALSE]
+    conc_B <- rev(conc_B)
+  }
+  if (flip_z) {
+    # Negate scores
+    mat <- mat * -1
+  }
+  return(list(mat = mat, conc_A = conc_A, conc_B = conc_B))
+}
 
 # Custom publication theme mappings
 get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
@@ -15,12 +32,25 @@ get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
   if (is.null(theme_preset) || length(theme_preset) == 0 || theme_preset == "") {
     theme_preset <- "Nature"
   }
-  # Returns: list(theme, colors)
+  
+  # Determine distinctive typography family for each style guide
+  font_family <- "sans"
+  if (theme_preset == "Nature") {
+    font_family <- "Arial"
+  } else if (theme_preset == "Science") {
+    font_family <- "Helvetica"
+  } else if (theme_preset == "The Economist") {
+    font_family <- "Trebuchet MS"
+  } else if (theme_preset == "Financial Times") {
+    font_family <- "Georgia"
+  }
+  
+  # Returns: list(theme, colors, family)
   # Theme preset configuration
   if (theme_preset == "Nature") {
     # Nature: clean, monochrome-leaning, black and grey text, rose-red/royal-blue accents
     theme_obj <- theme_bw() + theme(
-      text = element_text(family = "sans", color = "#111827"),
+      text = element_text(family = font_family, color = "#111827"),
       plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
       axis.title = element_text(size = 11, face = "bold"),
       axis.text = element_text(size = 9),
@@ -36,7 +66,7 @@ get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
   } else if (theme_preset == "Science") {
     # Science: pure white, clean serif/sans typography, high contrast, warm green/red accents
     theme_obj <- theme_classic() + theme(
-      text = element_text(family = "sans", color = "#000000"),
+      text = element_text(family = font_family, color = "#000000"),
       plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
       axis.title = element_text(size = 11, face = "bold"),
       axis.text = element_text(size = 9),
@@ -45,12 +75,12 @@ get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
     if (is_divergent) {
       colors <- c(low = "#059669", mid = "#ffffff", high = "#dc2626") # Green -> White -> Red
     } else {
-      colors <- colorRampPalette(brewer.pal(9, "Viridis"))(128)
+      colors <- colorRampPalette(c("#440154", "#3b528b", "#21908c", "#5dc963", "#fde725"))(128)
     }
   } else if (theme_preset == "The Economist") {
     # The Economist: light-blue background, bold sans-serif, white gridlines, distinctive red banner accent
     theme_obj <- theme_minimal() + theme(
-      text = element_text(family = "sans", color = "#0f172a"),
+      text = element_text(family = font_family, color = "#0f172a"),
       plot.title = element_text(size = 14, face = "bold", hjust = 0.5, color = "#075985"),
       axis.title = element_text(size = 11, face = "bold"),
       axis.text = element_text(size = 9),
@@ -67,7 +97,7 @@ get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
   } else if (theme_preset == "Financial Times") {
     # Financial Times: signature warm salmon paper background, dark blue/red palette
     theme_obj <- theme_minimal() + theme(
-      text = element_text(family = "sans", color = "#262626"),
+      text = element_text(family = font_family, color = "#262626"),
       plot.title = element_text(size = 14, face = "bold", hjust = 0.5, color = "#1a1a1a"),
       axis.title = element_text(size = 11, face = "bold", color = "#333333"),
       axis.text = element_text(size = 9, color = "#404040"),
@@ -83,11 +113,10 @@ get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
     }
   }
   
-  return(list(theme = theme_obj, colors = colors))
+  return(list(theme = theme_obj, colors = colors, family = font_family))
 }
 
-# Redesigned 2D Heatmap via ggplot2
-ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation = "synergism", theme_preset = "Nature", title = "") {
+ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation = "synergism", theme_preset = "Nature", title = "", flip_x = FALSE, flip_y = FALSE, flip_z = FALSE) {
   # Extract values
   if (model_name == "Data") {
     mat <- data_list$raw_inhibition
@@ -98,6 +127,13 @@ ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation 
     cTitle <- paste(model_name, "Score")
     is_div <- TRUE
   }
+  
+  conc_A <- data_list$conc_A
+  conc_B <- data_list$conc_B
+  
+  # Apply reactive flips
+  flipped <- apply_plot_flips(mat, conc_A, conc_B, flip_x, flip_y, flip_z)
+  mat <- flipped$mat
   
   # Melt the matrix for ggplot
   df <- as.data.frame(mat)
@@ -130,15 +166,19 @@ ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation 
   
   theme_cfg <- get_theme_palette(theme_preset, is_divergent = is_div)
   
+  # Formatting parameters for Z axis/fill scale if flipped
+  scale_formatter <- if (flip_z) abs else identity
+  fill_label <- if (flip_z) paste(cTitle, "(Inverted)") else cTitle
+
   # Construct plot
   p <- ggplot(df_long, aes(x = DrugA, y = DrugB, fill = Score)) +
     geom_tile(color = "#ffffff", size = 0.5) +
-    geom_text(aes(label = sprintf("%.2f", Score)), color = "#1e293b", size = 3, fontface = "bold") +
+    geom_text(aes(label = sprintf("%.2f", ifelse(flip_z, abs(Score), Score))), color = "#1e293b", size = 3, fontface = "bold") +
     labs(
       title = title_text,
       x = "Drug A Concentration",
       y = "Drug B Concentration",
-      fill = cTitle
+      fill = fill_label
     ) +
     theme_cfg$theme
   
@@ -150,18 +190,20 @@ ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation 
         low = theme_cfg$colors["high"], 
         mid = theme_cfg$colors["mid"], 
         high = theme_cfg$colors["low"], 
-        midpoint = 0
+        midpoint = 0,
+        labels = scale_formatter
       )
     } else {
       p <- p + scale_fill_gradient2(
         low = theme_cfg$colors["low"], 
         mid = theme_cfg$colors["mid"], 
         high = theme_cfg$colors["high"], 
-        midpoint = 0
+        midpoint = 0,
+        labels = scale_formatter
       )
     }
   } else {
-    p <- p + scale_fill_gradientn(colors = theme_cfg$colors)
+    p <- p + scale_fill_gradientn(colors = theme_cfg$colors, labels = scale_formatter)
   }
   
   return(p)
@@ -212,23 +254,31 @@ ggplot_single_agent_fits <- function(data_list, theme_preset = "Nature") {
   return(p)
 }
 
-# Redesigned 3D surface plotting via Plotly
-plotly_synergy_surface <- function(data_list, model_name = "Bliss", theme_preset = "Nature") {
+plotly_synergy_surface <- function(data_list, model_name = "Bliss", theme_preset = "Nature", camera_theta = 45, camera_phi = 30, camera_zoom = 1.8, flip_x = FALSE, flip_y = FALSE, flip_z = FALSE) {
   # Extract values
   if (model_name == "Data") {
     mat <- data_list$raw_inhibition
     cTitle <- "Inhibition"
+    is_div <- FALSE
   } else {
     mat <- data_list[[model_name]]$scores
     cTitle <- paste(model_name, "Score")
+    is_div <- TRUE
   }
   
-  # Clean names to extract exact numeric dose levels
   conc_A <- data_list$conc_A
   conc_B <- data_list$conc_B
   
-  # Style configuration
-  colorscale_choice <- "RdBu"
+  # Apply reactive flips
+  flipped <- apply_plot_flips(mat, conc_A, conc_B, flip_x, flip_y, flip_z)
+  mat <- flipped$mat
+  conc_A <- flipped$conc_A
+  conc_B <- flipped$conc_B
+  
+  # Pull the exact same theme preset configuration as 2D/1D ggplot
+  theme_cfg <- get_theme_palette(theme_preset, is_divergent = is_div)
+  
+  # Set background and text styling
   bg_color <- "#ffffff"
   text_color <- "#111827"
   grid_color <- "#f3f4f6"
@@ -236,19 +286,75 @@ plotly_synergy_surface <- function(data_list, model_name = "Bliss", theme_preset
   if (theme_preset == "The Economist") {
     bg_color <- "#e4eef2"
     grid_color <- "#ffffff"
-    colorscale_choice <- "Viridis"
+    text_color <- "#0f172a"
   } else if (theme_preset == "Financial Times") {
     bg_color <- "#fff1e5"
     grid_color <- "#e6d9ce"
-    colorscale_choice <- "Portland"
+    text_color <- "#262626"
   }
   
+  # Build Plotly custom colorscale from the active publication theme palette
+  if (is_div) {
+    colorscale_choice <- list(
+      list(0.0, theme_cfg$colors["low"]),
+      list(0.5, theme_cfg$colors["mid"]),
+      list(1.0, theme_cfg$colors["high"])
+    )
+  } else {
+    # Non-divergent scale
+    colorscale_choice <- list(
+      list(0.0, theme_cfg$colors[1]),
+      list(0.25, theme_cfg$colors[32]),
+      list(0.5, theme_cfg$colors[64]),
+      list(0.75, theme_cfg$colors[96]),
+      list(1.0, theme_cfg$colors[128])
+    )
+  }
+  
+  # Generate absolute hover labels to keep numbers positive even when physically inverted
+  hover_text <- matrix("", nrow = nrow(mat), ncol = ncol(mat))
+  for (i in 1:nrow(mat)) {
+    for (j in 1:ncol(mat)) {
+      orig_val <- mat[i, j]
+      if (flip_z) orig_val <- -orig_val # Reverse negation back to positive for labeling
+      hover_text[i, j] <- sprintf(
+        "Drug A: %s<br>Drug B: %s<br>%s: %.2f",
+        colnames(mat)[j], rownames(mat)[i], cTitle, orig_val
+      )
+    }
+  }
+  
+  # Convert azimuth (theta) and elevation (phi) to spherical Cartesian eye coordinates for Plotly
+  theta_rad <- camera_theta * pi / 180
+  phi_rad <- camera_phi * pi / 180
+  
+  eye_x <- camera_zoom * cos(phi_rad) * sin(theta_rad)
+  eye_y <- camera_zoom * cos(phi_rad) * cos(theta_rad)
+  eye_z <- camera_zoom * sin(phi_rad)
+  
+  # Dynamically construct z-axis configuration to display positive labels on invert
+  zaxis_config <- list(title = cTitle, gridcolor = grid_color, backgroundcolor = bg_color, showbackground = TRUE)
+  if (flip_z) {
+    z_min <- min(mat, na.rm = TRUE)
+    z_max <- max(mat, na.rm = TRUE)
+    ticks <- pretty(c(z_min, z_max), n = 5)
+    ticks <- ticks[ticks >= z_min & ticks <= z_max]
+    if (length(ticks) > 0) {
+      zaxis_config$tickmode <- "array"
+      zaxis_config$tickvals <- ticks
+      zaxis_config$ticktext <- as.character(abs(ticks))
+    }
+    zaxis_config$title <- paste(cTitle, "(Inverted - Positive Effect)")
+  }
+
   p <- plot_ly(
-    x = ~conc_A, 
-    y = ~conc_B, 
+    x = 1:ncol(mat), 
+    y = 1:nrow(mat), 
     z = ~mat, 
     type = "surface", 
-    colorscale = colorscale_choice
+    colorscale = colorscale_choice,
+    text = hover_text,
+    hoverinfo = "text"
   ) %>%
     layout(
       title = list(
@@ -256,9 +362,26 @@ plotly_synergy_surface <- function(data_list, model_name = "Bliss", theme_preset
         font = list(family = "sans", size = 16, color = text_color, weight = "bold")
       ),
       scene = list(
-        xaxis = list(title = "Drug A Concentration", gridcolor = grid_color, backgroundcolor = bg_color, showbackground = TRUE),
-        yaxis = list(title = "Drug B Concentration", gridcolor = grid_color, backgroundcolor = bg_color, showbackground = TRUE),
-        zaxis = list(title = cTitle, gridcolor = grid_color, backgroundcolor = bg_color, showbackground = TRUE)
+        camera = list(eye = list(x = eye_x, y = eye_y, z = eye_z)),
+        xaxis = list(
+          title = "Drug A Concentration", 
+          gridcolor = grid_color, 
+          backgroundcolor = bg_color, 
+          showbackground = TRUE,
+          tickmode = "array",
+          tickvals = 1:ncol(mat),
+          ticktext = colnames(mat)
+        ),
+        yaxis = list(
+          title = "Drug B Concentration", 
+          gridcolor = grid_color, 
+          backgroundcolor = bg_color, 
+          showbackground = TRUE,
+          tickmode = "array",
+          tickvals = 1:nrow(mat),
+          ticktext = rownames(mat)
+        ),
+        zaxis = zaxis_config
       ),
       paper_bgcolor = bg_color,
       plot_bgcolor = bg_color
@@ -296,22 +419,110 @@ myImagePlotReverse <- function(x, ...) {
   return(max_val)
 }
 
-raw_plot <- function(xx, ...) {
+raw_plot <- function(data_list, model_name = "Bliss", theme_preset = "Nature", theta = -60, phi = 30, flip_x = FALSE, flip_y = FALSE, flip_z = FALSE, ...) {
   # Standard beautiful 3D persp plot fallback
-  z <- as.matrix(xx)
-  class(z) <- "numeric"
+  # Save original par settings and restore on exit to prevent leaking styling to other plots
+  old_par <- par(no.readonly = TRUE)
+  on.exit(par(old_par))
   
-  x <- 1:nrow(z)
-  y <- 1:ncol(z)
+  # Extract values matching the active model
+  if (model_name == "Data") {
+    mat <- data_list$raw_inhibition
+    cTitle <- "Inhibition"
+    is_div <- FALSE
+  } else {
+    mat <- data_list[[model_name]]$scores
+    cTitle <- paste(model_name, "Score")
+    is_div <- TRUE
+  }
+
+  # Load theme preset configuration for background colors and font families
+  theme_cfg <- get_theme_palette(theme_preset, is_divergent = is_div)
   
-  jet.colors <- colorRampPalette(c("midnightblue", "blue", "cyan", "green", "yellow", "orange", "red", "darkred"))
-  nbcol <- 64
-  color <- jet.colors(nbcol)
+  # Determine background color based on the selected publication theme preset
+  bg_color <- "#ffffff"
+  if (theme_preset == "The Economist") {
+    bg_color <- "#e4eef2"
+  } else if (theme_preset == "Financial Times") {
+    bg_color <- "#fff1e5"
+  }
+  par(family = theme_cfg$family, bg = bg_color)
   
-  zfacet <- z[-1, -1] + z[-1, -ncol(z)] + z[-nrow(z), -1] + z[-nrow(z), -ncol(z)]
-  facetcol <- cut(zfacet, nbcol)
+  conc_A <- data_list$conc_A
+  conc_B <- data_list$conc_B
   
-  persp(x, y, z, col = color[facetcol], phi = 30, theta = -60,
-        ticktype = "detailed", d = 5, r = 1, shade = 0.1, expand = 0.6,
-        xlab = "Drug A", ylab = "Drug B", zlab = "Inhibition")
+  # Apply reactive flips
+  flipped <- apply_plot_flips(mat, conc_A, conc_B, flip_x, flip_y, flip_z)
+  mat_flipped <- flipped$mat
+  
+  # Transpose so that rows of mat_flipped (Drug A) maps to x-axis, and columns (Drug B) to y-axis of persp
+  z_t <- t(mat_flipped)
+  
+  # persp expects strictly increasing x and y coords. We use the indices 1:nrow(z_t) and 1:ncol(z_t)
+  x_coords <- 1:nrow(z_t)
+  y_coords <- 1:ncol(z_t)
+  
+  # Revert to legacy color ramp from user's papers (Blue -> Green -> Red/Yellow gradient)
+  ColorRamp <- rgb(seq(0, 1, length = 256),
+                   seq(0, 1, length = 256),
+                   seq(1, 0, length = 256))
+  
+  nbcol <- length(ColorRamp)
+  
+  zfacet <- z_t[-1, -1] + z_t[-1, -ncol(z_t)] + z_t[-nrow(z_t), -1] + z_t[-nrow(z_t), -ncol(z_t)]
+  
+  # Robust custom color scaling to prevent NA levels or cut() failures on identical ranges/negative values
+  min_z <- min(zfacet, na.rm = TRUE)
+  max_z <- max(zfacet, na.rm = TRUE)
+  if (is.na(min_z) || is.na(max_z) || min_z == max_z) {
+    facetcol <- rep(1, length(zfacet))
+  } else {
+    facetcol <- round((zfacet - min_z) / (max_z - min_z) * (nbcol - 1)) + 1
+    facetcol[facetcol < 1] <- 1
+    facetcol[facetcol > nbcol] <- nbcol
+    facetcol[is.na(facetcol)] <- 1
+  }
+  
+  zlab_text <- if (flip_z) paste(cTitle, "(Inverted)") else cTitle
+  
+  # Format axis labels to indicate if they have been flipped in the perspective
+  xlab_text <- if (flip_x) "Drug A Concentration (Flipped)" else "Drug A Concentration"
+  ylab_text <- if (flip_y) "Drug B Concentration (Flipped)" else "Drug B Concentration"
+  
+  # Find strictly formatted bounds for 3D coordinates
+  z_min_val <- min(z_t, na.rm = TRUE)
+  z_max_val <- max(z_t, na.rm = TRUE)
+  if (z_min_val == z_max_val) z_max_val <- z_min_val + 1.0
+  
+  # Call persp with axes = FALSE and box = TRUE to draw the 3D frame box cleanly
+  p_mat <- persp(x_coords, y_coords, z_t, col = ColorRamp[facetcol], phi = phi, theta = theta,
+                 d = 5, r = 1, shade = 0.1, expand = 0.6,
+                 xlab = "", ylab = "", zlab = "", axes = FALSE, box = TRUE)
+                 
+  # Project and draw Drug A (X axis) concentrations along the front-bottom edge
+  for (i in 1:nrow(z_t)) {
+    pt <- trans3d(i, 0.4, z_min_val - 0.08 * (z_max_val - z_min_val), p_mat)
+    text(pt$x, pt$y, labels = colnames(mat_flipped)[i], cex = 0.7, adj = c(0.5, 1), xpd = TRUE)
+  }
+  pt_xlab <- trans3d(mean(x_coords), 0.1, z_min_val - 0.18 * (z_max_val - z_min_val), p_mat)
+  text(pt_xlab$x, pt_xlab$y, labels = xlab_text, cex = 0.85, font = 2, xpd = TRUE)
+  
+  # Project and draw Drug B (Y axis) concentrations along the left-bottom edge
+  for (j in 1:ncol(z_t)) {
+    pt <- trans3d(0.4, j, z_min_val - 0.08 * (z_max_val - z_min_val), p_mat)
+    text(pt$x, pt$y, labels = rownames(mat_flipped)[j], cex = 0.7, adj = c(0.5, 1), xpd = TRUE)
+  }
+  pt_ylab <- trans3d(0.1, mean(y_coords), z_min_val - 0.18 * (z_max_val - z_min_val), p_mat)
+  text(pt_ylab$x, pt_ylab$y, labels = ylab_text, cex = 0.85, font = 2, xpd = TRUE)
+  
+  # Project and draw Z axis (Inhibition / Score) ticks and labels
+  z_ticks <- pretty(c(z_min_val, z_max_val), n = 5)
+  z_ticks <- z_ticks[z_ticks >= z_min_val & z_ticks <= z_max_val]
+  for (zt in z_ticks) {
+    pt <- trans3d(0.4, 0.4, zt, p_mat)
+    lbl <- if (flip_z) abs(zt) else zt
+    text(pt$x, pt$y, labels = as.character(lbl), cex = 0.7, adj = c(1.2, 0.5), xpd = TRUE)
+  }
+  pt_zlab <- trans3d(0.2, 0.2, mean(c(z_min_val, z_max_val)), p_mat)
+  text(pt_zlab$x, pt_zlab$y, labels = zlab_text, cex = 0.85, font = 2, srt = 90, adj = c(0.5, 1.5), xpd = TRUE)
 }

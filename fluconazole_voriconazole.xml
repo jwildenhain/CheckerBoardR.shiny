@@ -1,0 +1,23 @@
+<drug_combination>
+  <drug_a name="Fluconazole">
+    <concentrations>0,0.125,0.25,0.5,1.0,2.0</concentrations>
+  </drug_a>
+  <drug_b name="Voriconazole">
+    <concentrations>0,0.015,0.03,0.06,0.12,0.24</concentrations>
+  </drug_b>
+  <data_representation>viability</data_representation>
+  <matrix>
+    <row>1.00,0.94,0.88,0.80,0.72,0.65</row>
+    <row>0.95,0.89,0.82,0.75,0.68,0.60</row>
+    <row>0.88,0.82,0.75,0.68,0.60,0.52</row>
+    <row>0.78,0.72,0.65,0.58,0.50,0.42</row>
+    <row>0.65,0.58,0.50,0.42,0.35,0.28</row>
+    <row>0.50,0.42,0.35,0.28,0.20,0.12</row>
+  </matrix>
+  <settings>
+    <synergy_model>Loewe</synergy_model>
+    <plot_engine>2d_ggplot</plot_engine>
+    <theme_preset>Science</theme_preset>
+    <orientation>synergism</orientation>
+  </settings>
+</drug_combination>

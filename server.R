@@ -6,6 +6,7 @@
 
 library(shiny)
 library(plotly)
+source("SynergyCalculations.R")
 source("Make3DPlotFunctions.R")
 
 # Enable verbose un-sanitized error traces in logs for bulletproof debugging
@@ -28,11 +29,62 @@ shinyServer(function(input, output, session) {
       } else if (input$sampleData == 2) {
         data <- read.table("testData.tab", sep = "\t", header = TRUE, row.names = 1)		
       } else if (input$sampleData == 3) {
-        data <- read.table("sinus.csv", sep = ",", header = FALSE)
+        data <- read.table("antagonism.csv", sep = ",", header = TRUE, row.names = 1)
       } else if (input$sampleData == 4) {
-        data <- read.table("simple.csv", sep = ",", header = TRUE, row.names = 1)
+        # Load JSON and update Shiny GUI input controls reactively!
+        library(jsonlite)
+        payload <- fromJSON("paclitaxel_carboplatin.json")
+        conc_a <- as.numeric(payload$concentrations_a)
+        conc_b <- as.numeric(payload$concentrations_b)
+        mat <- as.matrix(payload$matrix)
+        colnames(mat) <- paste0(conc_a, "uM")
+        rownames(mat) <- paste0(conc_b, "uM")
+        if (!is.null(payload$settings)) {
+          if (!is.null(payload$settings$synergy_model)) updateSelectInput(session, "synergyModel", selected = payload$settings$synergy_model)
+          if (!is.null(payload$settings$theme_preset)) updateSelectInput(session, "themePreset", selected = payload$settings$theme_preset)
+          if (!is.null(payload$settings$plot_engine)) updateSelectInput(session, "plotEngine", selected = payload$settings$plot_engine)
+          if (!is.null(payload$settings$orientation)) updateRadioButtons(session, "myOrientation", selected = payload$settings$orientation)
+          if (!is.null(payload$data_type)) updateRadioButtons(session, "dataType", selected = payload$data_type)
+        }
+        data <- as.data.frame(mat)
+      } else if (input$sampleData == 5) {
+        # Load XML and update Shiny GUI input controls reactively!
+        library(xml2)
+        xml_doc <- read_xml("fluconazole_voriconazole.xml")
+        drug_a_node <- xml_find_first(xml_doc, "//drug_a")
+        conc_a <- as.numeric(strsplit(xml_text(xml_find_first(drug_a_node, "./concentrations")), ",")[[1]])
+        drug_b_node <- xml_find_first(xml_doc, "//drug_b")
+        conc_b <- as.numeric(strsplit(xml_text(xml_find_first(drug_b_node, "./concentrations")), ",")[[1]])
+        data_type <- xml_text(xml_find_first(xml_doc, "//data_representation"))
+        row_nodes <- xml_find_all(xml_doc, "//matrix/row")
+        mat <- matrix(0, nrow = length(row_nodes), ncol = length(conc_a))
+        for (idx in seq_along(row_nodes)) {
+          mat[idx, ] <- as.numeric(strsplit(xml_text(row_nodes[idx]), ",")[[1]])
+        }
+        colnames(mat) <- paste0(conc_a, "uM")
+        rownames(mat) <- paste0(conc_b, "uM")
+        settings_node <- xml_find_first(xml_doc, "//settings")
+        if (!is.na(settings_node)) {
+          syn_model <- xml_text(xml_find_first(settings_node, "./synergy_model"))
+          plot_eng <- xml_text(xml_find_first(settings_node, "./plot_engine"))
+          theme_pre <- xml_text(xml_find_first(settings_node, "./theme_preset"))
+          orient <- xml_text(xml_find_first(settings_node, "./orientation"))
+          if (!is.na(syn_model)) updateSelectInput(session, "synergyModel", selected = syn_model)
+          if (!is.na(theme_pre)) updateSelectInput(session, "themePreset", selected = theme_pre)
+          if (!is.na(plot_eng)) updateSelectInput(session, "plotEngine", selected = plot_eng)
+          if (!is.na(orient)) updateRadioButtons(session, "myOrientation", selected = orient)
+          if (!is.na(data_type)) updateRadioButtons(session, "dataType", selected = data_type)
+        }
+        data <- as.data.frame(mat)
       } else {
-        data <- read.table("cos.csv", sep = ",", header = TRUE, row.names = 1)
+        # Load Excel Spreadsheet (.xlsx)
+        library(readxl)
+        excel_data <- read_excel("testData.xlsx", sheet = 1)
+        # Convert first column to row names
+        df <- as.data.frame(excel_data)
+        rownames(df) <- df[, 1]
+        df <- df[, -1]
+        data <- df
       }
     } else if (input$dataInput == 2) {
       # File Upload
@@ -50,24 +102,94 @@ shinyServer(function(input, output, session) {
       # Pasted Text Data
       if (is.null(input$myData) || input$myData == "") return(NULL)
       
-      tmp <- matrix(strsplit(input$myData, "\n")[[1]])
-      mySep <- switch(input$fileSepP, '1' = ",", '2' = "\t", '3' = ";")
+      raw_txt <- trimws(input$myData)
       
-      # Determine row and column elements
-      myColnames <- strsplit(tmp[1], mySep)[[1]]
-      data <- matrix(0, length(tmp) - 1, length(myColnames))
-      colnames(data) <- myColnames
-      
-      for (i in 2:length(tmp)) {
-        myRow <- as.numeric(strsplit(paste(tmp[i], mySep, mySep, sep = ""), mySep)[[1]])
-        data[i - 1, ] <- myRow[1:ncol(data)]
-      }
-      
-      # Handle row labels if non-numeric or explicit
-      data <- data.frame(data)
-      if (is.na(as.numeric(data[1, 1])) || all(data[, 1] == seq_len(nrow(data)))) {
-        rownames(data) <- data[, 1]
-        data <- data[, -1]
+      if (startsWith(raw_txt, "{") || startsWith(raw_txt, "[")) {
+        # 1. JSON Payload parsing
+        library(jsonlite)
+        payload <- fromJSON(raw_txt)
+        conc_a <- as.numeric(payload$concentrations_a)
+        conc_b <- as.numeric(payload$concentrations_b)
+        mat <- as.matrix(payload$matrix)
+        
+        colnames(mat) <- paste0(conc_a, "uM")
+        rownames(mat) <- paste0(conc_b, "uM")
+        
+        # Update inputs reactively if settings exist
+        if (!is.null(payload$settings)) {
+          if (!is.null(payload$settings$synergy_model)) updateSelectInput(session, "synergyModel", selected = payload$settings$synergy_model)
+          if (!is.null(payload$settings$theme_preset)) updateSelectInput(session, "themePreset", selected = payload$settings$theme_preset)
+          if (!is.null(payload$settings$plot_engine)) updateSelectInput(session, "plotEngine", selected = payload$settings$plot_engine)
+          if (!is.null(payload$settings$orientation)) updateRadioButtons(session, "myOrientation", selected = payload$settings$orientation)
+          if (!is.null(payload$data_type)) updateRadioButtons(session, "dataType", selected = payload$data_type)
+        }
+        
+        data <- as.data.frame(mat)
+      } else if (startsWith(raw_txt, "<")) {
+        # 2. XML Payload parsing
+        library(xml2)
+        xml_doc <- read_xml(raw_txt)
+        
+        # Drug A
+        drug_a_node <- xml_find_first(xml_doc, "//drug_a")
+        conc_a_txt <- xml_text(xml_find_first(drug_a_node, "./concentrations"))
+        conc_a <- as.numeric(strsplit(conc_a_txt, ",")[[1]])
+        
+        # Drug B
+        drug_b_node <- xml_find_first(xml_doc, "//drug_b")
+        conc_b_txt <- xml_text(xml_find_first(drug_b_node, "./concentrations"))
+        conc_b <- as.numeric(strsplit(conc_b_txt, ",")[[1]])
+        
+        # Data type
+        data_rep_node <- xml_find_first(xml_doc, "//data_representation")
+        data_type <- xml_text(data_rep_node)
+        
+        # Matrix
+        row_nodes <- xml_find_all(xml_doc, "//matrix/row")
+        mat <- matrix(0, nrow = length(row_nodes), ncol = length(conc_a))
+        for (idx in seq_along(row_nodes)) {
+          row_vals <- as.numeric(strsplit(xml_text(row_nodes[idx]), ",")[[1]])
+          mat[idx, ] <- row_vals
+        }
+        
+        colnames(mat) <- paste0(conc_a, "uM")
+        rownames(mat) <- paste0(conc_b, "uM")
+        
+        # Settings
+        settings_node <- xml_find_first(xml_doc, "//settings")
+        if (!is.na(settings_node)) {
+          syn_model <- xml_text(xml_find_first(settings_node, "./synergy_model"))
+          plot_eng <- xml_text(xml_find_first(settings_node, "./plot_engine"))
+          theme_pre <- xml_text(xml_find_first(settings_node, "./theme_preset"))
+          orient <- xml_text(xml_find_first(settings_node, "./orientation"))
+          
+          if (!is.na(syn_model)) updateSelectInput(session, "synergyModel", selected = syn_model)
+          if (!is.na(theme_pre)) updateSelectInput(session, "themePreset", selected = theme_pre)
+          if (!is.na(plot_eng)) updateSelectInput(session, "plotEngine", selected = plot_eng)
+          if (!is.na(orient)) updateRadioButtons(session, "myOrientation", selected = orient)
+          if (!is.na(data_type)) updateRadioButtons(session, "dataType", selected = data_type)
+        }
+        
+        data <- as.data.frame(mat)
+      } else {
+        # 3. Delimited Matrix fallback
+        tmp <- matrix(strsplit(raw_txt, "\n")[[1]])
+        mySep <- switch(input$fileSepP, '1' = ",", '2' = "\t", '3' = ";")
+        
+        myColnames <- strsplit(tmp[1], mySep)[[1]]
+        data <- matrix(0, length(tmp) - 1, length(myColnames))
+        colnames(data) <- myColnames
+        
+        for (i in 2:length(tmp)) {
+          myRow <- as.numeric(strsplit(paste(tmp[i], mySep, mySep, sep = ""), mySep)[[1]])
+          data[i - 1, ] <- myRow[1:ncol(data)]
+        }
+        
+        data <- data.frame(data)
+        if (is.na(as.numeric(data[1, 1])) || all(data[, 1] == seq_len(nrow(data)))) {
+          rownames(data) <- data[, 1]
+          data <- data[, -1]
+        }
       }
     }
     
@@ -87,14 +209,19 @@ shinyServer(function(input, output, session) {
     df <- dataM()
     if (is.null(df)) return(NULL)
     
-    # Run the synergy calculator engine
-    calculate_synergy(
-      xx = df, 
-      data_type = input$dataType, 
-      use_fit = input$useFit, 
-      control_row = if (input$dataType == "viability") input$ctrlRow else 1,
-      control_col = if (input$dataType == "viability") input$ctrlCol else 1
-    )
+    withProgress(message = "Evaluating synergy models...", value = 0.3, {
+      setProgress(message = "Executing calculations...", value = 0.6)
+      res <- calculate_synergy(
+        xx = df, 
+        data_type = input$dataType, 
+        use_fit = input$useFit, 
+        control_row = if (input$dataType == "viability") input$ctrlRow else 1,
+        control_col = if (input$dataType == "viability") input$ctrlCol else 1
+      )
+      setProgress(message = "Finalizing visualization grids...", value = 0.9)
+      Sys.sleep(0.15) # Brief pause so the progress bar is visible and satisfying
+      res
+    })
   })
   
   # *** Render matrix data preview table ***
@@ -115,7 +242,17 @@ shinyServer(function(input, output, session) {
     res <- synergyResults()
     if (is.null(res)) return(NULL)
     
-    plotly_synergy_surface(res, input$synergyModel, input$themePreset)
+    plotly_synergy_surface(
+      res, 
+      input$synergyModel, 
+      input$themePreset,
+      camera_theta = input$plotlyTheta,
+      camera_phi = input$plotlyPhi,
+      camera_zoom = input$plotlyZoom,
+      flip_x = isTRUE(input$flipDataX),
+      flip_y = isTRUE(input$flipDataY),
+      flip_z = isTRUE(input$flipDataZ)
+    )
   })
   
   # *** Render modern 2D and 1D ggplot plots ***
@@ -130,14 +267,32 @@ shinyServer(function(input, output, session) {
       
       if (input$plotEngine == "2d_ggplot") {
         if (is.null(input$myOrientation) || length(input$myOrientation) == 0) return(NULL)
-        p <- ggplot_synergy_heatmap(res, input$synergyModel, input$myOrientation, input$themePreset, input$myTitle)
+        p <- ggplot_synergy_heatmap(
+          res, 
+          input$synergyModel, 
+          input$myOrientation, 
+          input$themePreset, 
+          input$myTitle,
+          flip_x = isTRUE(input$flipDataX),
+          flip_y = isTRUE(input$flipDataY),
+          flip_z = isTRUE(input$flipDataZ)
+        )
         print(p)
       } else if (input$plotEngine == "1d_curves") {
         p <- ggplot_single_agent_fits(res, input$themePreset)
         print(p)
       } else {
         # Fallback Base R 3D view
-        raw_plot(res$raw_inhibition)
+        raw_plot(
+          res,
+          input$synergyModel,
+          theme_preset = input$themePreset,
+          theta = input$plotlyTheta,
+          phi = input$plotlyPhi,
+          flip_x = isTRUE(input$flipDataX),
+          flip_y = isTRUE(input$flipDataY),
+          flip_z = isTRUE(input$flipDataZ)
+        )
       }
     }, error = function(e) {
       cat("RENDERPLOT_ERROR:", e$message, "\n")
