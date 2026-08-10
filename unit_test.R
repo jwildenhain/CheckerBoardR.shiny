@@ -12,7 +12,7 @@ cat("   STARTING CHECKERBOARDR SYNERGY TESTS   \n")
 cat("=========================================\n\n")
 
 # 1. Test Data Normalization
-cat("[1/5] Testing Data Normalization...\n")
+cat("[1/6] Testing Data Normalization...\n")
 mock_viability <- matrix(c(0.9, 0.45, 0.05, 0.8, 0.35, 0.01), 3, 2)
 colnames(mock_viability) <- c("0uM", "2uM")
 rownames(mock_viability) <- c("0uM", "1uM", "5uM")
@@ -38,7 +38,7 @@ cat(" -> Inhibition percent normalization check: SUCCESS\n\n")
 
 
 # 2. Test 4PL Curve Fitting
-cat("[2/5] Testing 4-Parameter Logistic (4PL) Hill Curve Fitting...\n")
+cat("[2/6] Testing 4-Parameter Logistic (4PL) Hill Curve Fitting...\n")
 conc <- c(0, 0.25, 0.5, 1, 2, 4, 8, 16)
 # Simulated responses matching an IC50 around 2.0, Emin=0, Emax=0.9, Hill=1.2
 resp <- 0.0 + (0.9 - 0.0) / (1 + (conc / 2.0)^(-1.2))
@@ -60,7 +60,7 @@ cat(" -> Hill predictor and inverse dose solving check: SUCCESS\n\n")
 
 
 # 3. Test Full Synergy Calculator Pipeline
-cat("[3/5] Testing HSA, Bliss, Loewe, and ZIP calculations on sample file...\n")
+cat("[3/6] Testing HSA, Bliss, Loewe, and ZIP calculations on sample file...\n")
 # Load the testData3 dataset
 test_df <- read.table("testData3.tab", sep="\t", header=FALSE)
 
@@ -93,7 +93,7 @@ cat(" -> Control well & single-agent zero synergy index check: SUCCESS\n\n")
 
 
 # 4. Test Monotonic Interpolation Fallback
-cat("[4/5] Testing interpolation fallback under fit failures...\n")
+cat("[4/6] Testing interpolation fallback under fit failures...\n")
 # Fit curve using linear fallback (set use_fit = FALSE)
 results_fallback <- calculate_synergy(test_df, data_type = "viability", use_fit = FALSE, control_row = 1, control_col = 1)
 stopifnot(all(dim(results_fallback$Loewe$scores) == c(nr, nc)))
@@ -104,7 +104,7 @@ cat(" -> Monotonic linear interpolation fallback check: SUCCESS\n\n")
 
 
 # 5. Regression coverage for reordered zero-dose axes and validation
-cat("[5/5] Testing reordered axes, ZIP surface fitting, and validation...\n")
+cat("[5/6] Testing reordered axes, ZIP surface fitting, and validation...\n")
 reordered <- matrix(c(
   0.30, 0.55, 0.10,
   0.45, 0.75, 0.20,
@@ -122,6 +122,20 @@ non_numeric <- reordered; non_numeric[1, 1] <- NA
 stopifnot(inherits(try(normalize_data(non_numeric), silent = TRUE), "try-error"))
 cat(" -> Reordered axes, ZIP, and validation checks: SUCCESS\n")
 
+# 6. Concentration label formatting and distinct bundled samples
+cat("[6/6] Testing concentration labels and sample uniqueness...\n")
+label_cases <- c("X0uM", "X.25uM", ".5uM", "-.75uM", "Xenon", "control")
+label_expected <- c("0uM", "0.25uM", "0.5uM", "-0.75uM", "Xenon", "control")
+stopifnot(identical(format_concentration_labels(label_cases), label_expected))
+antifungal_sample <- as.matrix(read.table("testData3.tab", sep = "\t", header = FALSE))
+anticancer_sample <- as.matrix(read.table("anticancer_synergy.tab", sep = "\t", header = TRUE,
+                                          row.names = 1, check.names = FALSE))
+stopifnot(identical(dim(antifungal_sample), dim(anticancer_sample)))
+stopifnot(!isTRUE(all.equal(unname(antifungal_sample), unname(anticancer_sample))))
+stopifnot(identical(format_concentration_labels(colnames(anticancer_sample))[1:4],
+                    c("0uM", "0.01uM", "0.03uM", "0.1uM")))
+cat(" -> Concentration label and distinct sample checks: SUCCESS\n")
+
 cat("=========================================\n")
-cat("   ALL 5 AUTOMATED TEST GROUPS PASSED!  \n")
+cat("   ALL 6 AUTOMATED TEST GROUPS PASSED!  \n")
 cat("=========================================\n")

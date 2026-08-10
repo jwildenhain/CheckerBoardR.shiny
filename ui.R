@@ -362,7 +362,7 @@ shinyUI(fluidPage(
   div(
     class = "header-bar",
     h1("CheckerboardR", span("a web-tool for synergy calculations", class = "subtitle")),
-    span("v2.1.1", class = "version-badge")
+    span("v2.1.2", class = "version-badge")
   ),
   
   sidebarLayout(
@@ -377,7 +377,7 @@ shinyUI(fluidPage(
           condition = "input.dataInput == '1'",
           radioButtons("sampleData", "Sample Datasets:", 
                        list("Anti-fungal Screening (testData3.tab)" = 1,
-                            "Anticancer Agent Grid (testData.tab)" = 2, 
+                            "Synthetic Anticancer Synergy Grid (anticancer_synergy.tab)" = 2,
                             "Antagonistic Combination (antagonism.csv)" = 3,
                             "Chemotherapy Grid (paclitaxel_carboplatin.json)" = 4,
                             "Antifungal Grid (fluconazole_voriconazole.xml)" = 5,

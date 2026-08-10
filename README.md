@@ -1,4 +1,4 @@
-# CheckerBoardR.shiny (v2.1.1)
+# CheckerBoardR.shiny (v2.1.2)
 ##### Modernized Shiny Webportal for Multi-Model Drug Combination Synergy & Antagonism Analysis
 
 CheckerBoardR.shiny is a high-performance, premium web portal and modeling platform designed to perform drug combination synergy, antagonism, and dose-response curve fitting. It supports relative cell viability normalization, percent inhibition mapping, and robust mathematical synergy models.
@@ -12,6 +12,14 @@ TyersChem2 development deployment: http://checkerboardr.198.58.117.28.nip.io/
 
 ---
 
+## v2.1.2 Patch Release
+
+* Replaces the numerically duplicated anticancer sample with a distinct illustrative synthetic synergy grid.
+* Preserves numeric-leading concentration headers during TAB, CSV, pasted-data, and Excel ingestion.
+* Normalizes R-generated concentration labels such as `X0uM`, `X.25uM`, and `.25uM` for readable previews and plots.
+* Adds automated checks for duplicated sample matrices and malformed concentration labels.
+* Validated on TyersChem2 across all 40 model/axis states for the two affected samples, plus 16 compatibility states for CSV, JSON, XML, and Excel samples.
+
 ## v2.1.1 Patch Release
 
 * Fixes 2D heatmap annotations that previously recycled the zero-control score across every tile while the underlying colour scale remained correct.
@@ -22,7 +30,7 @@ TyersChem2 development deployment: http://checkerboardr.198.58.117.28.nip.io/
 
 ---
 
-## 🚀 Key Features in v2.1.1
+## 🚀 Key Features in v2.1.2
 
 ### 1. Unified Synergy Modeling Engine
 * **4-Parameter Logistic (4PL) Hill Curves:** Fits dose-response levels natively, computing $EC_{50}$, Slope (Hill coefficient), $E_{max}$, and $E_{min}$ using R's numeric optimization.
@@ -46,6 +54,8 @@ The 2D heatmap builds a vector of display values before applying the ggplot text
 ### 4. Click-to-Load Sample Data Expansion & Paste Auto-Detect
 * Click-to-load samples for **JSON Chemotherapy Grids**, **XML Antifungal Grids**, **Excel spreadsheets (`.xlsx`)**, and **Delimited CSV/TAB** formats.
 * Includes a pasted text area with an **intelligent auto-detector** that decodes XML or JSON payloads dynamically and updates GUI input choices automatically.
+* Includes a distinct illustrative synthetic anticancer synergy matrix in `anticancer_synergy.tab`; it replaces the former anticancer sample that duplicated `testData3.tab` numerically.
+* Concentration labels are normalized for display: R-generated prefixes such as `X0uM` and `X.25uM` become `0uM` and `0.25uM`, while ordinary text labels remain unchanged.
 
 ### 5. Stdio Python MCP Server
 * Integrated [checkerboardr_mcp_server.py](checkerboardr_mcp_server.py), allowing LLM coding assistants to perform calculations, compute scores, and generate publication-ready plots programmatically.

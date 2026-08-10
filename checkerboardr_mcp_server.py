@@ -198,7 +198,7 @@ def main():
                         },
                         "serverInfo": {
                             "name": "checkerboardr-mcp-server",
-                            "version": "2.1.1"
+                            "version": "2.1.2"
                         }
                     }
                 }

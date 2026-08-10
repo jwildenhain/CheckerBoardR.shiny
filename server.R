@@ -27,9 +27,9 @@ shinyServer(function(input, output, session) {
       if (input$sampleData == 1) {
         data <- read.table("testData3.tab", sep = "\t", header = FALSE)			
       } else if (input$sampleData == 2) {
-        data <- read.table("testData.tab", sep = "\t", header = TRUE, row.names = 1)		
+        data <- read.table("anticancer_synergy.tab", sep = "\t", header = TRUE, row.names = 1, check.names = FALSE)
       } else if (input$sampleData == 3) {
-        data <- read.table("antagonism.csv", sep = ",", header = TRUE, row.names = 1)
+        data <- read.table("antagonism.csv", sep = ",", header = TRUE, row.names = 1, check.names = FALSE)
       } else if (input$sampleData == 4) {
         # Load JSON and update Shiny GUI input controls reactively!
         library(jsonlite)
@@ -79,9 +79,9 @@ shinyServer(function(input, output, session) {
       } else {
         # Load Excel Spreadsheet (.xlsx)
         library(readxl)
-        excel_data <- read_excel("testData.xlsx", sheet = 1)
+        excel_data <- read_excel("testData.xlsx", sheet = 1, .name_repair = "minimal")
         # Convert first column to row names
-        df <- as.data.frame(excel_data)
+        df <- as.data.frame(excel_data, check.names = FALSE)
         rownames(df) <- df[, 1]
         df <- df[, -1]
         data <- df
@@ -94,7 +94,7 @@ shinyServer(function(input, output, session) {
       mySep <- switch(input$fileSepDF, '1' = ",", '2' = "\t", '3' = ";")
       
       if (input$fileHeader) { 
-        data <- read.table(inFile$datapath, sep = mySep, header = TRUE, row.names = 1, fill = TRUE)
+        data <- read.table(inFile$datapath, sep = mySep, header = TRUE, row.names = 1, fill = TRUE, check.names = FALSE)
       } else {
         data <- read.table(inFile$datapath, sep = mySep, header = FALSE, fill = TRUE)
       }
@@ -185,7 +185,7 @@ shinyServer(function(input, output, session) {
           data[i - 1, ] <- myRow[1:ncol(data)]
         }
         
-        data <- data.frame(data)
+        data <- data.frame(data, check.names = FALSE)
         if (is.na(as.numeric(data[1, 1])) || all(data[, 1] == seq_len(nrow(data)))) {
           rownames(data) <- data[, 1]
           data <- data[, -1]
@@ -200,6 +200,8 @@ shinyServer(function(input, output, session) {
     if (is.null(rownames(data)) || all(rownames(data) == as.character(1:nrow(data)))) {
       rownames(data) <- paste0(seq(0, length.out = nrow(data)), "uM")
     }
+    colnames(data) <- format_concentration_labels(colnames(data))
+    rownames(data) <- format_concentration_labels(rownames(data))
     
     return(data)
   })

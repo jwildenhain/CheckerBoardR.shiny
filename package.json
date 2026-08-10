@@ -1,7 +1,7 @@
 {
   "name": "checkerboardr-shiny-ux-tests",
   "private": true,
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Browser regression tests for the CheckerBoardR Shiny application",
   "scripts": {
     "test:ux:sample-heatmaps": "node tests/playwright_sample_heatmap_ux.js",

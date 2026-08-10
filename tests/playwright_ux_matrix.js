@@ -40,7 +40,7 @@ const LOW_MAGNITUDE_INTERACTION_JSON = JSON.stringify({
 
 const DATASETS = [
   { id: "1", source: "sample", name: "anti-fungal-tab", label: "Anti-fungal Screening (testData3.tab)" },
-  { id: "2", source: "sample", name: "anticancer-tab", label: "Anticancer Agent Grid (testData.tab)" },
+  { id: "2", source: "sample", name: "anticancer-synergy-tab", label: "Synthetic Anticancer Synergy Grid (anticancer_synergy.tab)" },
   { id: "3", source: "sample", name: "antagonism-csv", label: "Antagonistic Combination (antagonism.csv)" },
   { id: "4", source: "sample", name: "chemotherapy-json", label: "Chemotherapy Grid (paclitaxel_carboplatin.json)" },
   { id: "5", source: "sample", name: "antifungal-xml", label: "Antifungal Grid (fluconazole_voriconazole.xml)" },

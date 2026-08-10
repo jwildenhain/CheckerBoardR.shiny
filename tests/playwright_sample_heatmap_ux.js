@@ -19,7 +19,7 @@ const ARTIFACT_DIR = path.resolve(
 
 const DATASETS = [
   { id: "1", name: "anti-fungal-tab", label: "Anti-fungal Screening (testData3.tab)" },
-  { id: "2", name: "anticancer-tab", label: "Anticancer Agent Grid (testData.tab)" },
+  { id: "2", name: "anticancer-synergy-tab", label: "Synthetic Anticancer Synergy Grid (anticancer_synergy.tab)" },
   { id: "3", name: "antagonism-csv", label: "Antagonistic Combination (antagonism.csv)" },
   { id: "4", name: "chemotherapy-json", label: "Chemotherapy Grid (paclitaxel_carboplatin.json)" },
   { id: "5", name: "antifungal-xml", label: "Antifungal Grid (fluconazole_voriconazole.xml)" },
@@ -132,6 +132,15 @@ function previewIssues(preview) {
   }
   if (!preview.headers.length || preview.rows.some(row => !row.label)) {
     issues.push({ code: "MISSING_CONCENTRATION_LABEL", detail: "Preview row/column labels are incomplete" });
+  }
+  const labels = [...preview.headers, ...preview.rows.map(row => row.label)];
+  const rPrefixed = labels.filter(label => /^X(?:[0-9]|\.[0-9])/.test(label));
+  if (rPrefixed.length) {
+    issues.push({ code: "R_PREFIXED_CONCENTRATION_LABEL", detail: rPrefixed.join(", ") });
+  }
+  const leadingDecimals = labels.filter(label => /^-?\.[0-9]/.test(label));
+  if (leadingDecimals.length) {
+    issues.push({ code: "UNPADDED_DECIMAL_LABEL", detail: leadingDecimals.join(", ") });
   }
   return issues;
 }
@@ -503,6 +512,7 @@ async function run() {
   const browser = await chromium.launch({ headless: process.env.HEADED !== "1" });
   const results = [];
   const events = [];
+  const sampleMatrixOwners = new Map();
   let activeContext = {};
 
   try {
@@ -536,6 +546,16 @@ async function run() {
         await waitForShinyIdle(page);
         const preview = await readMatrixPreview(page);
         const datasetPreviewIssues = previewIssues(preview);
+        const matrixSignature = sha256(Buffer.from(JSON.stringify(preview.rows.map(row => row.values))));
+        const duplicateOwner = sampleMatrixOwners.get(matrixSignature);
+        if (duplicateOwner) {
+          datasetPreviewIssues.push({
+            code: "DUPLICATE_SAMPLE_MATRIX",
+            detail: `${dataset.name} is numerically identical to ${duplicateOwner}`,
+          });
+        } else {
+          sampleMatrixOwners.set(matrixSignature, dataset.name);
+        }
 
         await page.locator('a[data-value="Data visualization"]').click();
         await waitForShinyIdle(page);

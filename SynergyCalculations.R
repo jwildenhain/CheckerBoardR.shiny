@@ -12,6 +12,17 @@ extract_concentration <- function(label) {
   return(val)
 }
 
+# Restore readable concentration labels after R has made numeric-leading names
+# syntactically valid (for example, X0uM or X.25uM).
+format_concentration_labels <- function(labels) {
+  if (is.null(labels)) return(labels)
+  formatted <- trimws(as.character(labels))
+  formatted <- sub("^X(?=(?:[0-9]|\\.[0-9]))", "", formatted, perl = TRUE)
+  formatted <- sub("^\\.([0-9])", "0.\\1", formatted, perl = TRUE)
+  formatted <- sub("^-\\.([0-9])", "-0.\\1", formatted, perl = TRUE)
+  formatted
+}
+
 normalize_data <- function(xx, data_type = "viability", control_row = 1, control_col = 1) {
   # Perform robust data normalization
   #
@@ -226,6 +237,8 @@ calculate_synergy <- function(xx, data_type = "viability", use_fit = TRUE, contr
   x_names <- colnames(xx); y_names <- rownames(xx)
   if (is.null(x_names) || identical(x_names, paste0("V", seq_len(ncol(xx))))) x_names <- as.character(seq(0, length.out = ncol(xx)))
   if (is.null(y_names) || identical(y_names, as.character(seq_len(nrow(xx))))) y_names <- as.character(seq(0, length.out = nrow(xx)))
+  x_names <- format_concentration_labels(x_names)
+  y_names <- format_concentration_labels(y_names)
   colnames(I_matrix) <- colnames(V_matrix) <- x_names
   rownames(I_matrix) <- rownames(V_matrix) <- y_names
   conc_A <- extract_concentration(x_names)
