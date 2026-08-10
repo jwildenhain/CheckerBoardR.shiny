@@ -362,7 +362,7 @@ shinyUI(fluidPage(
   div(
     class = "header-bar",
     h1("CheckerboardR", span("a web-tool for synergy calculations", class = "subtitle")),
-    span("v2.1.0", class = "version-badge")
+    span("v2.1.1", class = "version-badge")
   ),
   
   sidebarLayout(

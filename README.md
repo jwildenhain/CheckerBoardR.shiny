@@ -1,4 +1,4 @@
-# CheckerBoardR.shiny (v2.1.0)
+# CheckerBoardR.shiny (v2.1.1)
 ##### Modernized Shiny Webportal for Multi-Model Drug Combination Synergy & Antagonism Analysis
 
 CheckerBoardR.shiny is a high-performance, premium web portal and modeling platform designed to perform drug combination synergy, antagonism, and dose-response curve fitting. It supports relative cell viability normalization, percent inhibition mapping, and robust mathematical synergy models.
@@ -12,7 +12,17 @@ TyersChem2 development deployment: http://checkerboardr.198.58.117.28.nip.io/
 
 ---
 
-## 🚀 Key Features in v2.1.0
+## v2.1.1 Patch Release
+
+* Fixes 2D heatmap annotations that previously recycled the zero-control score across every tile while the underlying colour scale remained correct.
+* Adds sample-focused Playwright coverage for all six bundled datasets, five calculation models, and X/Y/Z flip states without using the computed summary table as an oracle.
+* Adds a broader browser matrix for plotting-engine, fit-mode, and low-magnitude precision diagnostics.
+* Documents the native Shiny Server and Apache development deployment workflow.
+* Validated on TyersChem2 across 120 sample heatmap states with no failures or browser/Shiny errors.
+
+---
+
+## 🚀 Key Features in v2.1.1
 
 ### 1. Unified Synergy Modeling Engine
 * **4-Parameter Logistic (4PL) Hill Curves:** Fits dose-response levels natively, computing $EC_{50}$, Slope (Hill coefficient), $E_{max}$, and $E_{min}$ using R's numeric optimization.
