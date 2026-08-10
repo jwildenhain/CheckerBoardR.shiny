@@ -169,11 +169,12 @@ ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation 
   # Formatting parameters for Z axis/fill scale if flipped
   scale_formatter <- if (flip_z) abs else identity
   fill_label <- if (flip_z) paste(cTitle, "(Inverted)") else cTitle
+  df_long$DisplayScore <- if (flip_z) abs(df_long$Score) else df_long$Score
 
   # Construct plot
   p <- ggplot(df_long, aes(x = DrugA, y = DrugB, fill = Score)) +
     geom_tile(color = "#ffffff", size = 0.5) +
-    geom_text(aes(label = sprintf("%.2f", ifelse(flip_z, abs(Score), Score))), color = "#1e293b", size = 3, fontface = "bold") +
+    geom_text(aes(label = sprintf("%.2f", DisplayScore)), color = "#1e293b", size = 3, fontface = "bold") +
     labs(
       title = title_text,
       x = "Drug A Concentration",
