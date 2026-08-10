@@ -26,17 +26,18 @@ normalize_data <- function(xx, data_type = "viability", control_row = 1, control
   #     1) normalized viability matrix [0, 1]
   #     2) normalized inhibition matrix [0, 1]
   
-  z <- as.matrix(xx)
-  
-  # Ensure all values are numeric
-  class(z) <- "numeric"
+  z <- suppressWarnings(matrix(as.numeric(as.matrix(xx)), nrow = nrow(xx),
+                               ncol = ncol(xx), dimnames = dimnames(xx)))
+  if (!data_type %in% c("viability", "inhibition")) stop("Invalid data type.")
+  if (!length(z) || any(!is.finite(z))) stop("Checkerboard values must all be finite and numeric.")
+  if (control_row < 1 || control_row > nrow(z) || control_col < 1 || control_col > ncol(z))
+    stop("Control well coordinates are outside the checkerboard.")
   
   if (data_type == "viability") {
     # Divide by the control well value to get viability fraction
     ctrl_val <- z[control_row, control_col]
-    if (is.na(ctrl_val) || ctrl_val <= 0) {
-      ctrl_val <- max(z, na.rm = TRUE) # fallback
-    }
+    if (!is.finite(ctrl_val) || ctrl_val <= 0)
+      stop("The selected viability control must be a positive finite value.")
     viability <- z / ctrl_val
     # Cap viability at [0, 1.2] to handle slight experimental noise
     viability[viability < 0] <- 0
@@ -73,8 +74,10 @@ fit_4pl <- function(conc, resp) {
   conc <- conc[ord]
   resp <- resp[ord]
   
+  valid <- is.finite(conc) & is.finite(resp)
+  conc <- conc[valid]; resp <- resp[valid]
   non_zero <- conc > 0
-  if (sum(non_zero) < 2) {
+  if (sum(non_zero) < 3 || length(unique(conc[non_zero])) < 3) {
     return(NULL) # Too few non-zero points to fit a curve
   }
   
@@ -85,11 +88,10 @@ fit_4pl <- function(conc, resp) {
     EC50 <- par[3]
     Hill <- par[4]
     
-    if (EC50 <= 0) return(Inf)
-    
     # Predict response
     pred <- Emin + (Emax - Emin) / (1 + (conc / EC50)^(-Hill))
-    sum((resp - pred)^2, na.rm = TRUE)
+    if (any(!is.finite(pred))) return(.Machine$double.xmax)
+    sum((resp - pred)^2)
   }
   
   # Sensible starting parameters
@@ -100,14 +102,18 @@ fit_4pl <- function(conc, resp) {
     Hill = 1.0
   )
   
+  lower <- c(-0.2, 0, min(conc[non_zero]) / 100, 0.05)
+  upper <- c(0.5, 1.2, max(conc[non_zero]) * 100, 10)
+  init_par <- pmin(pmax(init_par, lower), upper)
   fit <- tryCatch({
-    optim(init_par, loss, method = "Nelder-Mead", control = list(maxit = 2000))
+    optim(init_par, loss, method = "L-BFGS-B", lower = lower, upper = upper, control = list(maxit = 2000))
   }, error = function(e) NULL)
   
   if (is.null(fit) || fit$convergence != 0) {
     return(NULL)
   }
   
+  if (!all(is.finite(fit$par)) || fit$par[2] <= fit$par[1]) return(NULL)
   return(fit$par)
 }
 
@@ -166,10 +172,10 @@ get_single_agent_curve <- function(conc, resp, use_fit = TRUE) {
     # Predict aggregation: x = conc (c_valid), y = resp (r_valid)
     agg_pred <- aggregate(r_valid, list(c_valid), FUN = mean)
     agg_pred_x <- agg_pred$Group.1
-    agg_pred_y <- agg_pred$x
+    agg_pred_y <- pmin(1, pmax(-0.2, stats::isoreg(agg_pred_x, agg_pred$x)$yf))
     
-    # Inverse aggregation: x = resp (r_valid), y = conc (c_valid)
-    agg_inv <- aggregate(c_valid, list(r_valid), FUN = mean)
+    # Build the inverse from the same monotonic forward curve.
+    agg_inv <- aggregate(agg_pred_x, list(agg_pred_y), FUN = mean)
     agg_inv_x <- agg_inv$Group.1
     agg_inv_y <- agg_inv$x
   }
@@ -216,21 +222,34 @@ calculate_synergy <- function(xx, data_type = "viability", use_fit = TRUE, contr
   I_matrix <- norm$inhibition
   V_matrix <- norm$viability
   
-  # Parse concentrations from row/column labels
-  conc_A <- extract_concentration(colnames(xx))
-  conc_B <- extract_concentration(rownames(xx))
+  # Parse concentrations from labels; unlabeled matrices use ordinal doses from zero.
+  x_names <- colnames(xx); y_names <- rownames(xx)
+  if (is.null(x_names) || identical(x_names, paste0("V", seq_len(ncol(xx))))) x_names <- as.character(seq(0, length.out = ncol(xx)))
+  if (is.null(y_names) || identical(y_names, as.character(seq_len(nrow(xx))))) y_names <- as.character(seq(0, length.out = nrow(xx)))
+  colnames(I_matrix) <- colnames(V_matrix) <- x_names
+  rownames(I_matrix) <- rownames(V_matrix) <- y_names
+  conc_A <- extract_concentration(x_names)
+  conc_B <- extract_concentration(y_names)
+  zero_A <- which(abs(conc_A) < sqrt(.Machine$double.eps))
+  zero_B <- which(abs(conc_B) < sqrt(.Machine$double.eps))
+  if (length(zero_A) != 1 || length(zero_B) != 1)
+    stop("Exactly one zero-concentration row and column are required.")
+  zero_col <- zero_A[[1]]
+  zero_row <- zero_B[[1]]
   
   nr <- nrow(xx)
   nc <- ncol(xx)
   
   # Single-agent responses (Drug A on columns, Drug B on rows)
   # In a standard checkerboard, row 1 is Drug B = 0, column 1 is Drug A = 0
-  resp_A <- I_matrix[1, ]
-  resp_B <- I_matrix[, 1]
+  resp_A <- I_matrix[zero_row, ]
+  resp_B <- I_matrix[, zero_col]
   
   # Fit single-agent curves
   model_A <- get_single_agent_curve(conc_A, resp_A, use_fit)
   model_B <- get_single_agent_curve(conc_B, resp_B, use_fit)
+  row_models <- lapply(seq_len(nr), function(j) get_single_agent_curve(conc_A, I_matrix[j, ], use_fit))
+  col_models <- lapply(seq_len(nc), function(i) get_single_agent_curve(conc_B, I_matrix[, i], use_fit))
   
   # Initialize output matrices
   hsa_scores <- matrix(0, nr, nc, dimnames = dimnames(xx))
@@ -256,28 +275,30 @@ calculate_synergy <- function(xx, data_type = "viability", use_fit = TRUE, contr
       # 1. HSA Model
       E_hsa <- max(Ia, Ib)
       hsa_expected[j, i] <- E_hsa
-      hsa_scores[j, i] <- if (i == 1 || j == 1) 0 else obs - E_hsa
+      is_single_agent <- i == zero_col || j == zero_row
+      hsa_scores[j, i] <- if (is_single_agent) 0 else obs - E_hsa
       
       # 2. Bliss Model
       E_bliss <- Ia + Ib - (Ia * Ib)
       bliss_expected[j, i] <- E_bliss
-      bliss_scores[j, i] <- if (i == 1 || j == 1) 0 else obs - E_bliss
+      bliss_scores[j, i] <- if (is_single_agent) 0 else obs - E_bliss
       
-      # 3. ZIP Model (using fitted values)
+      # 3. ZIP delta from bidirectionally fitted combination responses
       Ia_fit <- model_A$predict(d_A)
       Ib_fit <- model_B$predict(d_B)
       E_zip <- Ia_fit + Ib_fit - (Ia_fit * Ib_fit)
       zip_expected[j, i] <- E_zip
-      zip_scores[j, i] <- if (i == 1 || j == 1) 0 else obs - E_zip
+      combination_fit <- mean(c(row_models[[j]]$predict(d_A), col_models[[i]]$predict(d_B)))
+      zip_scores[j, i] <- if (is_single_agent) 0 else combination_fit - E_zip
       
       # 4. Loewe Model (using Combination Index)
-      if (i == 1 && j == 1) {
+      if (i == zero_col && j == zero_row) {
         loewe_scores[j, i] <- 0
         loewe_expected[j, i] <- 0
-      } else if (i == 1) {
+      } else if (i == zero_col) {
         loewe_scores[j, i] <- 0
         loewe_expected[j, i] <- Ib
-      } else if (j == 1) {
+      } else if (j == zero_row) {
         loewe_scores[j, i] <- 0
         loewe_expected[j, i] <- Ia
       } else {
@@ -288,11 +309,6 @@ calculate_synergy <- function(xx, data_type = "viability", use_fit = TRUE, contr
         # Avoid division by zero if single agent cannot achieve 'obs'
         if (D_A <= 0) D_A <- 1e10
         if (D_B <= 0) D_B <- 1e10
-        
-        ci <- d_A / D_A + d_B / D_B
-        
-        # Loewe Score is defined as 1 - CI, representing synergy/antagonism
-        loewe_scores[j, i] <- 1 - ci
         
         # Determine expected effect (where CI = 1)
         # Root finding for expected effect under Loewe additivity
@@ -312,6 +328,7 @@ calculate_synergy <- function(xx, data_type = "viability", use_fit = TRUE, contr
           0.5 * (Ia + Ib)
         })
         loewe_expected[j, i] <- expected_y
+        loewe_scores[j, i] <- obs - expected_y
       }
     }
   }
@@ -323,6 +340,8 @@ calculate_synergy <- function(xx, data_type = "viability", use_fit = TRUE, contr
     raw_viability = round(V_matrix, 3),
     conc_A = conc_A,
     conc_B = conc_B,
+    zero_row = zero_row,
+    zero_col = zero_col,
     single_fit_A = model_A$par,
     single_fit_B = model_B$par,
     

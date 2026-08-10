@@ -12,7 +12,6 @@ shinyUI(fluidPage(
   
   # Include modern typography and high-end visual stylesheets
   tags$head(
-    tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"),
     tags$style(HTML("
       /* Premium Light Blue Bootstrap Styling */
       body, h1, h2, h3, h4, h5, h6, .shiny-text-output, label {
@@ -363,7 +362,7 @@ shinyUI(fluidPage(
   div(
     class = "header-bar",
     h1("CheckerboardR", span("a web-tool for synergy calculations", class = "subtitle")),
-    span("v1.0 Modernized", class = "version-badge")
+    span("v2.1.0", class = "version-badge")
   ),
   
   sidebarLayout(

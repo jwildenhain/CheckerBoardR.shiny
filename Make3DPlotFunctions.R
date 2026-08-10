@@ -212,11 +212,11 @@ ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation 
 # Redesigned 1D Single-Agent Fit curves side-by-side
 ggplot_single_agent_fits <- function(data_list, theme_preset = "Nature") {
   conc_A <- data_list$conc_A
-  resp_A <- data_list$raw_inhibition[1, ]
+  resp_A <- data_list$raw_inhibition[data_list$zero_row, ]
   par_A <- data_list$single_fit_A
   
   conc_B <- data_list$conc_B
-  resp_B <- data_list$raw_inhibition[, 1]
+  resp_B <- data_list$raw_inhibition[, data_list$zero_col]
   par_B <- data_list$single_fit_B
   
   # Grid sequence for smooth fitted line plotting
@@ -446,7 +446,7 @@ raw_plot <- function(data_list, model_name = "Bliss", theme_preset = "Nature", t
   } else if (theme_preset == "Financial Times") {
     bg_color <- "#fff1e5"
   }
-  par(family = theme_cfg$family, bg = bg_color)
+  par(family = "sans", bg = bg_color)
   
   conc_A <- data_list$conc_A
   conc_B <- data_list$conc_B

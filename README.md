@@ -1,4 +1,4 @@
-# CheckerBoardR.shiny (v2.0.0)
+# CheckerBoardR.shiny (v2.1.0)
 ##### Modernized Shiny Webportal for Multi-Model Drug Combination Synergy & Antagonism Analysis
 
 CheckerBoardR.shiny is a high-performance, premium web portal and modeling platform designed to perform drug combination synergy, antagonism, and dose-response curve fitting. It supports relative cell viability normalization, percent inhibition mapping, and robust mathematical synergy models.
@@ -10,7 +10,7 @@ Online Portal: http://chemgrid.org:3838/checkerboardr/
 
 ---
 
-## 🚀 Key Features in v2.0.0
+## 🚀 Key Features in v2.1.0
 
 ### 1. Unified Synergy Modeling Engine
 * **4-Parameter Logistic (4PL) Hill Curves:** Fits dose-response levels natively, computing $EC_{50}$, Slope (Hill coefficient), $E_{max}$, and $E_{min}$ using R's numeric optimization.
@@ -49,8 +49,8 @@ To build and run the entire CheckerBoardR portal locally inside a container:
 # Build the Docker image
 docker build -t checkerboardr .
 
-# Run the container (exposes R Shiny on port 3839)
-docker run -p 3839:3839 checkerboardr
+# Run the container (host port 3839 maps to Shiny port 3838)
+docker run -p 3839:3838 checkerboardr
 ```
 
 Access the app in your browser at **`http://localhost:3839`**.

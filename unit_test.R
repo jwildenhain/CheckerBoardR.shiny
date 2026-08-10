@@ -5,13 +5,14 @@
 #
 
 source("SynergyCalculations.R")
+set.seed(20260723)
 
 cat("=========================================\n")
 cat("   STARTING CHECKERBOARDR SYNERGY TESTS   \n")
 cat("=========================================\n\n")
 
 # 1. Test Data Normalization
-cat("[1/4] Testing Data Normalization...\n")
+cat("[1/5] Testing Data Normalization...\n")
 mock_viability <- matrix(c(0.9, 0.45, 0.05, 0.8, 0.35, 0.01), 3, 2)
 colnames(mock_viability) <- c("0uM", "2uM")
 rownames(mock_viability) <- c("0uM", "1uM", "5uM")
@@ -37,7 +38,7 @@ cat(" -> Inhibition percent normalization check: SUCCESS\n\n")
 
 
 # 2. Test 4PL Curve Fitting
-cat("[2/4] Testing 4-Parameter Logistic (4PL) Hill Curve Fitting...\n")
+cat("[2/5] Testing 4-Parameter Logistic (4PL) Hill Curve Fitting...\n")
 conc <- c(0, 0.25, 0.5, 1, 2, 4, 8, 16)
 # Simulated responses matching an IC50 around 2.0, Emin=0, Emax=0.9, Hill=1.2
 resp <- 0.0 + (0.9 - 0.0) / (1 + (conc / 2.0)^(-1.2))
@@ -59,7 +60,7 @@ cat(" -> Hill predictor and inverse dose solving check: SUCCESS\n\n")
 
 
 # 3. Test Full Synergy Calculator Pipeline
-cat("[3/4] Testing HSA, Bliss, Loewe, and ZIP calculations on sample file...\n")
+cat("[3/5] Testing HSA, Bliss, Loewe, and ZIP calculations on sample file...\n")
 # Load the testData3 dataset
 test_df <- read.table("testData3.tab", sep="\t", header=FALSE)
 
@@ -92,7 +93,7 @@ cat(" -> Control well & single-agent zero synergy index check: SUCCESS\n\n")
 
 
 # 4. Test Monotonic Interpolation Fallback
-cat("[4/4] Testing interpolation fallback under fit failures...\n")
+cat("[4/5] Testing interpolation fallback under fit failures...\n")
 # Fit curve using linear fallback (set use_fit = FALSE)
 results_fallback <- calculate_synergy(test_df, data_type = "viability", use_fit = FALSE, control_row = 1, control_col = 1)
 stopifnot(all(dim(results_fallback$Loewe$scores) == c(nr, nc)))
@@ -100,6 +101,27 @@ stopifnot(is.null(results_fallback$single_fit_A))
 stopifnot(is.null(results_fallback$single_fit_B))
 cat(" -> Monotonic linear interpolation fallback check: SUCCESS\n\n")
 
+
+
+# 5. Regression coverage for reordered zero-dose axes and validation
+cat("[5/5] Testing reordered axes, ZIP surface fitting, and validation...\n")
+reordered <- matrix(c(
+  0.30, 0.55, 0.10,
+  0.45, 0.75, 0.20,
+  0.00, 0.40, 0.00
+), nrow = 3, byrow = TRUE,
+ dimnames = list(c("1uM", "4uM", "0uM"), c("2uM", "8uM", "0uM")))
+reordered_result <- calculate_synergy(reordered, data_type = "inhibition", use_fit = FALSE)
+stopifnot(reordered_result$zero_row == 3, reordered_result$zero_col == 3)
+stopifnot(all(reordered_result$Bliss$scores[3, ] == 0))
+stopifnot(all(reordered_result$Bliss$scores[, 3] == 0))
+stopifnot(any(abs(results$ZIP$scores - results$Bliss$scores) > 1e-6))
+invalid_control <- try(normalize_data(reordered, "viability", 99, 1), silent = TRUE)
+stopifnot(inherits(invalid_control, "try-error"))
+non_numeric <- reordered; non_numeric[1, 1] <- NA
+stopifnot(inherits(try(normalize_data(non_numeric), silent = TRUE), "try-error"))
+cat(" -> Reordered axes, ZIP, and validation checks: SUCCESS\n")
+
 cat("=========================================\n")
-cat("   ALL 4 AUTOMATED UNIT TESTS PASSED!    \n")
+cat("   ALL 5 AUTOMATED TEST GROUPS PASSED!  \n")
 cat("=========================================\n")

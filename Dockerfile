@@ -2,7 +2,7 @@
 FROM rocker/shiny:latest
 
 # Install required R packages
-RUN R -e "install.packages(c('plotly', 'ggplot2', 'RColorBrewer'), repos='https://cloud.r-project.org/')"
+RUN R -e "install.packages(c('plotly', 'ggplot2', 'RColorBrewer', 'jsonlite', 'xml2', 'readxl'), repos='https://cloud.r-project.org/')"
 
 # Remove default Shiny apps
 RUN rm -rf /srv/shiny-server/*

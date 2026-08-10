@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import json
+import math
 import os
 import subprocess
 import tempfile
@@ -67,6 +68,21 @@ def execute_synergy_R(params, output_path):
     plot_engine = settings.get("plot_engine", "2d_ggplot")
     theme_preset = settings.get("theme_preset", "Nature")
     orientation = settings.get("orientation", "synergism")
+
+    allowed = {"data_type": {"viability", "inhibition"}, "synergy_model": {"Data", "HSA", "Bliss", "Loewe", "ZIP"}, "plot_engine": {"2d_ggplot", "1d_curves", "3d_base"}, "theme_preset": {"Nature", "Science", "The Economist", "Financial Times"}, "orientation": {"synergism", "antagonism"}}
+    chosen = {"data_type": data_type, "synergy_model": synergy_model, "plot_engine": plot_engine, "theme_preset": theme_preset, "orientation": orientation}
+    if any(value not in allowed[key] for key, value in chosen.items()):
+        raise ValueError("Unsupported analysis setting")
+    if len(conc_a) < 2 or len(conc_b) < 2 or len(matrix) != len(conc_b) or any(len(row) != len(conc_a) for row in matrix):
+        raise ValueError("Matrix dimensions must match concentration vectors")
+    numeric_values = conc_a + conc_b + [value for row in matrix for value in row]
+    if any(isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) for value in numeric_values):
+        raise ValueError("Concentrations and matrix values must be numeric")
+    r_data_type, r_model, r_engine = map(json.dumps, (data_type, synergy_model, plot_engine))
+    r_theme, r_orientation = map(json.dumps, (theme_preset, orientation))
+    r_title = json.dumps(f"{drug_a} + {drug_b} Synergy")
+    r_output_path = json.dumps(output_path)
+    r_project_root = json.dumps(os.path.dirname(os.path.abspath(__file__)))
     
     # Flatten matrix
     flat_matrix = []
@@ -75,8 +91,8 @@ def execute_synergy_R(params, output_path):
         
     # Formulate R script
     r_template = f"""
-source("/home/jw/Source/CheckerBoardR.shiny/SynergyCalculations.R")
-source("/home/jw/Source/CheckerBoardR.shiny/Make3DPlotFunctions.R")
+source(file.path({r_project_root}, "SynergyCalculations.R"))
+source(file.path({r_project_root}, "Make3DPlotFunctions.R"))
 
 # Recreate data matrix
 flat_vals <- c({", ".join(map(str, flat_matrix))})
@@ -90,14 +106,14 @@ xx <- as.data.frame(xx)
 
 res <- calculate_synergy(
   xx, 
-  data_type = "{data_type}", 
+  data_type = {r_data_type},
   use_fit = TRUE, 
   control_row = 1, 
   control_col = 1
 )
 
 # Output summary stats
-scores <- if ("{synergy_model}" == "Data") res$raw_inhibition else res[["{synergy_model}"]]$scores
+scores <- if ({r_model} == "Data") res$raw_inhibition else res[[{r_model}]]$scores
 max_score <- max(scores, na.rm = TRUE)
 min_score <- min(scores, na.rm = TRUE)
 mean_score <- mean(scores, na.rm = TRUE)
@@ -110,15 +126,15 @@ cat(sprintf('{{"max_synergy": %.4f, "min_synergy": %.4f, "mean_synergy": %.4f, "
 cat("STATS_END\\n")
 
 # Render plot
-png("{output_path}", width = 800, height = 600, res = 120)
-if ("{plot_engine}" == "2d_ggplot") {{
-  p <- ggplot_synergy_heatmap(res, "{synergy_model}", "{orientation}", "{theme_preset}", "{drug_a} + {drug_b} Synergy")
+png({r_output_path}, width = 800, height = 600, res = 120)
+if ({r_engine} == "2d_ggplot") {{
+  p <- ggplot_synergy_heatmap(res, {r_model}, {r_orientation}, {r_theme}, {r_title})
   print(p)
-}} else if ("{plot_engine}" == "1d_curves") {{
-  p <- ggplot_single_agent_fits(res, "{theme_preset}")
+}} else if ({r_engine} == "1d_curves") {{
+  p <- ggplot_single_agent_fits(res, {r_theme})
   print(p)
 }} else {{
-  raw_plot(res$raw_inhibition, theta = -60, phi = 30)
+  raw_plot(res, {r_model}, {r_theme}, theta = -60, phi = 30)
 }}
 dev.off()
 """
@@ -132,7 +148,8 @@ dev.off()
         result = subprocess.run(
             ["Rscript", temp_script_path],
             capture_output=True,
-            text=True
+            text=True,
+            timeout=120
         )
         if result.returncode != 0:
             log(f"Rscript failed: {result.stderr}")
@@ -181,7 +198,7 @@ def main():
                         },
                         "serverInfo": {
                             "name": "checkerboardr-mcp-server",
-                            "version": "1.1.0"
+                            "version": "2.1.0"
                         }
                     }
                 }

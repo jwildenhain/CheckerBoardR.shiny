@@ -209,6 +209,10 @@ shinyServer(function(input, output, session) {
     df <- dataM()
     if (is.null(df)) return(NULL)
     
+    shiny::validate(
+      shiny::need(nrow(df) >= 2 && ncol(df) >= 2, "A checkerboard requires at least two rows and columns."),
+      shiny::need(input$ctrlRow <= nrow(df) && input$ctrlCol <= ncol(df), "Control coordinates are outside the matrix.")
+    )
     withProgress(message = "Evaluating synergy models...", value = 0.3, {
       setProgress(message = "Executing calculations...", value = 0.6)
       res <- calculate_synergy(
@@ -373,7 +377,10 @@ shinyServer(function(input, output, session) {
         p <- ggplot_single_agent_fits(res, input$themePreset)
         print(p)
       } else {
-        raw_plot(res$raw_inhibition)
+        raw_plot(res, input$synergyModel, theme_preset = input$themePreset,
+                 theta = input$plotlyTheta, phi = input$plotlyPhi,
+                 flip_x = isTRUE(input$flipDataX), flip_y = isTRUE(input$flipDataY),
+                 flip_z = isTRUE(input$flipDataZ))
       }
       dev.off()
     },
@@ -398,7 +405,10 @@ shinyServer(function(input, output, session) {
         p <- ggplot_single_agent_fits(res, input$themePreset)
         print(p)
       } else {
-        raw_plot(res$raw_inhibition)
+        raw_plot(res, input$synergyModel, theme_preset = input$themePreset,
+                 theta = input$plotlyTheta, phi = input$plotlyPhi,
+                 flip_x = isTRUE(input$flipDataX), flip_y = isTRUE(input$flipDataY),
+                 flip_z = isTRUE(input$flipDataZ))
       }
       dev.off()
     },
@@ -423,7 +433,10 @@ shinyServer(function(input, output, session) {
         p <- ggplot_single_agent_fits(res, input$themePreset)
         print(p)
       } else {
-        raw_plot(res$raw_inhibition)
+        raw_plot(res, input$synergyModel, theme_preset = input$themePreset,
+                 theta = input$plotlyTheta, phi = input$plotlyPhi,
+                 flip_x = isTRUE(input$flipDataX), flip_y = isTRUE(input$flipDataY),
+                 flip_z = isTRUE(input$flipDataZ))
       }
       dev.off()
     },
