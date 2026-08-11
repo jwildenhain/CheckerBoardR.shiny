@@ -30,10 +30,10 @@ async function chooseSample(page, value) {
 
 async function conditionLabels(page) {
   return {
-    flipX: await page.locator('label[for="flipDataX"]').innerText(),
-    flipY: await page.locator('label[for="flipDataY"]').innerText(),
-    barometerA: await page.locator('label[for="barometerA"]').innerText(),
-    barometerB: await page.locator('label[for="barometerB"]').innerText(),
+    flipX: await page.locator("#flipDataX + span").innerText(),
+    flipY: await page.locator("#flipDataY + span").innerText(),
+    barometerA: await page.locator("#barometerA-label").innerText(),
+    barometerB: await page.locator("#barometerB-label").innerText(),
   };
 }
 
@@ -41,6 +41,13 @@ async function assertSampleLabels(page, sample, expectedA, expectedB) {
   await page.locator('a[data-value="Data upload"]').click();
   await chooseSample(page, sample);
   await page.locator('a[data-value="Data visualization"]').click();
+  await page.waitForFunction(({ a, b }) => {
+    const flipA = document.querySelector("#flipDataX + span")?.textContent || "";
+    const flipB = document.querySelector("#flipDataY + span")?.textContent || "";
+    const barometerA = document.querySelector("#barometerA-label")?.textContent || "";
+    const barometerB = document.querySelector("#barometerB-label")?.textContent || "";
+    return flipA.includes(a) && flipB.includes(b) && barometerA.includes(a) && barometerB.includes(b);
+  }, { a: expectedA, b: expectedB }, { timeout: TIMEOUT });
   await waitIdle(page);
   const labels = await conditionLabels(page);
   const passed = labels.flipX.includes(expectedA) && labels.flipY.includes(expectedB)
