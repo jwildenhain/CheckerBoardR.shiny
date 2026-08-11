@@ -18,6 +18,8 @@ TyersChem2 development deployment: http://checkerboardr.198.58.117.28.nip.io/
 * Preserves numeric-leading concentration headers during TAB, CSV, pasted-data, and Excel ingestion.
 * Normalizes R-generated concentration labels such as `X0uM`, `X.25uM`, and `.25uM` for readable previews and plots.
 * Adds automated checks for duplicated sample matrices and malformed concentration labels.
+* Makes each sample filename a direct download link and derives condition/axis labels from the first two underscore-separated filename terms.
+* Adds a `Conditions` worksheet to `testData.xlsx` so Excel samples without filename metadata can provide editable Condition A/Condition B names.
 * Validated on TyersChem2 across all 40 model/axis states for the two affected samples, plus 16 compatibility states for CSV, JSON, XML, and Excel samples.
 
 ## v2.1.1 Patch Release
@@ -34,8 +36,11 @@ TyersChem2 development deployment: http://checkerboardr.198.58.117.28.nip.io/
 
 ### 1. Unified Synergy Modeling Engine
 * **4-Parameter Logistic (4PL) Hill Curves:** Fits dose-response levels natively, computing $EC_{50}$, Slope (Hill coefficient), $E_{max}$, and $E_{min}$ using R's numeric optimization.
-* **Synergy Models:** Computes **Highest Single Agent (HSA)**, **Bliss Independence**, **Loewe Additivity**, and **Zero Interaction Potency (ZIP)** synergy landscapes.
+* **Synergy Models:** Computes **Highest Single Agent (HSA)**, **Bliss Independence**, **Loewe Additivity**, **Zero Interaction Potency (ZIP)**, and a conservative HSA/Bliss/Loewe **Consensus** landscape.
 * **Monotonic Linear Interpolation:** Fallback routines guarantee calculation completion even under highly noisy or partial data fits.
+* **Reference and Fitted Maps:** Switch between observed inhibition, model reference effect, synergy score, and ZIP fitted-response matrices without changing the underlying calculation.
+* **Replicate-aware Uncertainty:** Upload matched matrix files as independent replicates to calculate cell-level SD, SEM, and bootstrap 95% confidence intervals.
+* **Explicit Baseline Correction:** Preserve the original input while optionally correcting negative values or the entire inhibition matrix using the fitted single-agent baseline.
 
 ### 2. Premium Publication-Quality Visualization Layouts
 * **3D Interactive Plotly Surface:** Features dynamic 3D camera controls (Rotation/Azimuth, Elevation, Zoom/Distance) to allow researchers to view and export figures at identical angles.
@@ -43,6 +48,8 @@ TyersChem2 development deployment: http://checkerboardr.198.58.117.28.nip.io/
 * **1D Single-Agent Fit Curves:** Side-by-side dose-response curve fits for quick visual inspection.
 * **Classic 3D persp Fallback (Base R):** Uses your publication-ready Blue-Green-Yellow gradient color scheme, automatically matching the chosen theme.
 * **Style Guide Presets:** Integrates **Nature (Classic Grey/Arial)**, **Science (High-Contrast White/Helvetica)**, **The Economist (Sleek Blue/Trebuchet MS)**, and **Financial Times (Warm Salmon/Georgia)** style templates.
+* **Synergy Barometer:** Compare observed inhibition with all model reference effects at a selected dose pair.
+* **Auditable Matrix Export:** Download original/adjusted inhibition, every reference and score matrix, ZIP fitted response, and replicate uncertainty in one tidy CSV.
 
 The 2D heatmap builds a vector of display values before applying the ggplot text aesthetic. This ensures that every tile is annotated with its own model score, including when the Z-axis inversion is enabled.
 
@@ -56,6 +63,8 @@ The 2D heatmap builds a vector of display values before applying the ggplot text
 * Includes a pasted text area with an **intelligent auto-detector** that decodes XML or JSON payloads dynamically and updates GUI input choices automatically.
 * Includes a distinct illustrative synthetic anticancer synergy matrix in `anticancer_synergy.tab`; it replaces the former anticancer sample that duplicated `testData3.tab` numerically.
 * Concentration labels are normalized for display: R-generated prefixes such as `X0uM` and `X.25uM` become `0uM` and `0.25uM`, while ordinary text labels remain unchanged.
+* Every displayed sample filename is clickable. Filenames such as `paclitaxel_carboplatin.json` automatically label the two conditions and plot axes as Paclitaxel and Carboplatin; additional underscore terms are treated as suffixes.
+* Excel samples can use a second `Conditions` worksheet with `Field` and `Value` columns. Rows named `Condition A` and `Condition B` provide condition names when the filename itself has no underscore pair.
 
 ### 5. Stdio Python MCP Server
 * Integrated [checkerboardr_mcp_server.py](checkerboardr_mcp_server.py), allowing LLM coding assistants to perform calculations, compute scores, and generate publication-ready plots programmatically.
@@ -122,6 +131,22 @@ The broader visualization matrix can be run separately:
 CHECKERBOARDR_URL=http://checkerboardr.198.58.117.28.nip.io/ \
   npm run test:ux:matrix
 ```
+
+Run the capability workflow (reference/fitted maps, consensus, baseline correction, replicates, barometer, flips, and CSV export):
+
+```bash
+CHECKERBOARDR_URL=http://checkerboardr.198.58.117.28.nip.io/ \
+  npm run test:ux:capabilities
+```
+
+Validate all bundled file downloads and the JSON/Excel condition-label fallbacks:
+
+```bash
+CHECKERBOARDR_URL=http://checkerboardr.198.58.117.28.nip.io/ \
+  npm run test:ux:sample-downloads
+```
+
+The release-by-release iteration list and expected outcomes are maintained in [`tests/INTERFACE_TEST_MATRIX.md`](tests/INTERFACE_TEST_MATRIX.md).
 
 The heatmap-label correction was validated against 120 sample states: six datasets, five models, and baseline/X/Y/Z views. All 120 states passed on the TyersChem2 development deployment.
 

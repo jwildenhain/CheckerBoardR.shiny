@@ -4,8 +4,11 @@
   "version": "2.1.2",
   "description": "Browser regression tests for the CheckerBoardR Shiny application",
   "scripts": {
+    "test:unit": "Rscript unit_test.R && Rscript tests/capability_unit_test.R",
     "test:ux:sample-heatmaps": "node tests/playwright_sample_heatmap_ux.js",
-    "test:ux:matrix": "node tests/playwright_ux_matrix.js"
+    "test:ux:sample-downloads": "node tests/playwright_sample_downloads.js",
+    "test:ux:matrix": "node tests/playwright_ux_matrix.js",
+    "test:ux:capabilities": "node tests/playwright_capabilities.js"
   },
   "devDependencies": {
     "playwright": "1.60.0"

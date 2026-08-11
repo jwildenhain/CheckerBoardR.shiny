@@ -7,6 +7,18 @@
 library(shiny)
 library(plotly)
 
+sample_download_choice <- function(description, output_id, filename) {
+  tagList(
+    description, " (",
+    tags$span(
+      class = "sample-file-link-wrap",
+      onclick = "event.stopPropagation();",
+      downloadLink(output_id, filename, class = "sample-file-link")
+    ),
+    ")"
+  )
+}
+
 shinyUI(fluidPage(
   style = "padding: 30px; max-width: 1400px; margin: 0 auto;",
   
@@ -244,6 +256,23 @@ shinyUI(fluidPage(
         color: #ffffff !important;
         text-decoration: none !important;
       }
+
+      /* Inline sample filenames remain links without inheriting export-button styling. */
+      .sample-file-link-wrap { display: inline; }
+      .sample-file-link.shiny-download-link,
+      .sample-file-link.shiny-download-link:hover {
+        display: inline !important;
+        background: transparent !important;
+        color: #0284c7 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        transform: none !important;
+        font-weight: 700 !important;
+        text-decoration: underline !important;
+      }
       
       /* Card Layout for Tables & Previews */
       .table-card {
@@ -375,20 +404,29 @@ shinyUI(fluidPage(
         
         conditionalPanel(
           condition = "input.dataInput == '1'",
-          radioButtons("sampleData", "Sample Datasets:", 
-                       list("Anti-fungal Screening (testData3.tab)" = 1,
-                            "Synthetic Anticancer Synergy Grid (anticancer_synergy.tab)" = 2,
-                            "Antagonistic Combination (antagonism.csv)" = 3,
-                            "Chemotherapy Grid (paclitaxel_carboplatin.json)" = 4,
-                            "Antifungal Grid (fluconazole_voriconazole.xml)" = 5,
-                            "Excel Spreadsheet Grid (testData.xlsx)" = 6))
+          radioButtons(
+            "sampleData", "Sample Datasets:",
+            choiceNames = list(
+              sample_download_choice("Anti-fungal Screening", "downloadSample1", "testData3.tab"),
+              sample_download_choice("Synthetic Anticancer Synergy Grid", "downloadSample2", "anticancer_synergy.tab"),
+              sample_download_choice("Antagonistic Combination", "downloadSample3", "antagonism.csv"),
+              sample_download_choice("Chemotherapy Grid", "downloadSample4", "paclitaxel_carboplatin.json"),
+              sample_download_choice("Antifungal Grid", "downloadSample5", "fluconazole_voriconazole.xml"),
+              sample_download_choice("Excel Spreadsheet Grid", "downloadSample6", "testData.xlsx")
+            ),
+            choiceValues = as.character(seq_len(6)),
+            selected = "1"
+          )
         ),
         
         conditionalPanel(
           condition = "input.dataInput == '2'",
-          fileInput("upload", "Upload delimited file (.csv, .tab, .txt):", multiple = FALSE),
+          fileInput("upload", "Upload one matrix or matched replicate matrices:", multiple = TRUE,
+                    accept = c(".csv", ".tab", ".tsv", ".txt")),
+          helpText("Multiple files are analysed as independent replicates and must use identical concentration labels."),
           checkboxInput("fileHeader", "Header contains concentration levels", TRUE),
-          radioButtons("fileSepDF", "Delimiter:", list("Comma (,)" = 1, "Tab (\\t)" = 2, "Semicolon (;)" = 3))
+          radioButtons("fileSepDF", "Delimiter:", list("Comma (,)" = 1, "Tab (\\t)" = 2, "Semicolon (;)" = 3)),
+          numericInput("bootstrapIterations", "Replicate bootstrap iterations:", value = 200, min = 20, max = 5000, step = 20)
         ),
         
         conditionalPanel(
@@ -405,6 +443,11 @@ shinyUI(fluidPage(
         radioButtons("dataType", "Input Data Representation:",
                      list("Cell Viability / OD (requires control normalization)" = "viability",
                           "Normalized Inhibition / Cell Death percentage" = "inhibition")),
+
+        selectInput("baselineMethod", "Fitted baseline correction:",
+                    choices = list("None (preserve current behaviour)" = "none",
+                                   "Correct negative inhibition values only" = "negative",
+                                   "Correct the full inhibition matrix" = "all")),
         
         conditionalPanel(
           condition = "input.dataType == 'viability'",
@@ -423,7 +466,15 @@ shinyUI(fluidPage(
                                    "Highest Single Agent (HSA)" = "HSA",
                                    "Loewe Additivity" = "Loewe",
                                    "Zero Interaction Potency (ZIP)" = "ZIP",
+                                   "Conservative Bliss/Loewe/HSA Consensus" = "Consensus",
                                    "Raw Input Data" = "Data")),
+
+        selectInput("plotValue", "Matrix to visualize:",
+                    choices = list("Synergy score" = "score", "Reference effect" = "reference",
+                                   "Observed inhibition" = "observed")),
+
+        selectInput("uncertaintyDisplay", "Replicate uncertainty labels:",
+                    choices = list("None" = "none", "Mean ± SEM" = "sem", "Bootstrap 95% CI" = "ci")),
         
         conditionalPanel(
           condition = "input.synergyModel != 'Data'",
@@ -515,7 +566,8 @@ shinyUI(fluidPage(
                  div(style = "margin-bottom: 20px;",
                      downloadButton("downloadPlotPDF", "Download PDF Vector"),
                      downloadButton("downloadPlotSVG", "Download SVG Vector"),
-                     downloadButton("downloadPlotEPS", "Download EPS Vector")
+                     downloadButton("downloadPlotEPS", "Download EPS Vector"),
+                     downloadButton("downloadMatrixCSV", "Export Score & Reference Matrices")
                  ),
                  
                  # Dynamic render UI depending on selection
@@ -532,11 +584,29 @@ shinyUI(fluidPage(
                  h4("Computed Synergy Summary Statistics"),
                  div(style = "overflow-x: auto; background-color: #ffffff; border-radius: 12px; padding: 12px; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 4px 10px rgba(15, 23, 42, 0.02);",
                      tableOutput("checkerboardStatsTable")
-                 )
+                 ),
+                 br(),
+                 h4("Dose-pair Synergy Barometer"),
+                 fluidRow(
+                   column(6, selectInput("barometerA", "Drug A concentration:", choices = NULL)),
+                   column(6, selectInput("barometerB", "Drug B concentration:", choices = NULL))
+                 ),
+                 plotOutput("barometerPlot", height = "330px"),
+                 div(style = "overflow-x: auto; background-color: #ffffff; border-radius: 12px; padding: 12px; border: 1px solid rgba(226, 232, 240, 0.8);",
+                     tableOutput("barometerTable"))
         ),
         
         tabPanel("News",
                  h4("News & Release Notes"),
+                 h5("August 11, 2026"),
+                 p(HTML("<b>v2.1.2 Data Provenance & Analysis Extension:</b><br>",
+                        "• Added score, reference-effect, observed-response, and ZIP fitted-response matrix views.<br>",
+                        "• Added matched-replicate SD, SEM, and bootstrap 95% confidence intervals, including labelled 2D heatmaps and full-precision CSV export.<br>",
+                        "• Added conservative HSA/Bliss/Loewe Consensus analysis, dose-pair synergy barometers, and explicit fitted-baseline correction modes.<br>",
+                        "• Replaced the duplicated anticancer example and normalized numeric-leading concentration labels across supported sample formats.<br>",
+                        "• Made bundled sample filenames directly downloadable and derived Drug A/Drug B condition labels from underscore-separated filenames.<br>",
+                        "• Added an editable Conditions metadata sheet to the Excel example and expanded numerical and Playwright regression coverage.")),
+                 br(),
                  h5("May 31, 2026"),
                  p(HTML("<b>v1.1 Advanced Control & Performance Upgrade:</b><br>",
                         "• Integrated reactive 3D Camera View sliders directly into the sidebar to control azimuth, elevation, and zoom settings for reproducible plotly surfaces.<br>",

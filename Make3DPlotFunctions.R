@@ -7,6 +7,14 @@
 library(ggplot2)
 library(plotly)
 library(RColorBrewer)
+
+get_condition_plot_labels <- function(data_list) {
+  condition_a <- if (!is.null(data_list$condition_A) && nzchar(data_list$condition_A)) data_list$condition_A else "Drug A"
+  condition_b <- if (!is.null(data_list$condition_B) && nzchar(data_list$condition_B)) data_list$condition_B else "Drug B"
+  axis_a <- if (!is.null(data_list$axis_label_A) && nzchar(data_list$axis_label_A)) data_list$axis_label_A else paste(condition_a, "Concentration")
+  axis_b <- if (!is.null(data_list$axis_label_B) && nzchar(data_list$axis_label_B)) data_list$axis_label_B else paste(condition_b, "Concentration")
+  list(a = condition_a, b = condition_b, axis_a = axis_a, axis_b = axis_b)
+}
 # Helper to reactively flip x, y, and z dimensions of matrices for custom views
 apply_plot_flips <- function(mat, conc_A, conc_B, flip_x = FALSE, flip_y = FALSE, flip_z = FALSE) {
   if (flip_x) {
@@ -116,17 +124,13 @@ get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
   return(list(theme = theme_obj, colors = colors, family = font_family))
 }
 
-ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation = "synergism", theme_preset = "Nature", title = "", flip_x = FALSE, flip_y = FALSE, flip_z = FALSE) {
-  # Extract values
-  if (model_name == "Data") {
-    mat <- data_list$raw_inhibition
-    cTitle <- "Inhibition"
-    is_div <- FALSE
-  } else {
-    mat <- data_list[[model_name]]$scores
-    cTitle <- paste(model_name, "Score")
-    is_div <- TRUE
-  }
+ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation = "synergism", theme_preset = "Nature", title = "", flip_x = FALSE, flip_y = FALSE, flip_z = FALSE, value_type = "score", uncertainty_display = "none") {
+  condition_labels <- get_condition_plot_labels(data_list)
+  selected <- select_analysis_matrix(data_list, model_name, value_type)
+  mat <- selected$matrix
+  cTitle <- selected$title
+  is_div <- selected$divergent
+  uncertainty <- selected$statistics
   
   conc_A <- data_list$conc_A
   conc_B <- data_list$conc_B
@@ -148,10 +152,22 @@ ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation 
   
   df_long$DrugA <- factor(df_long$DrugA, levels = unique(colnames(mat)))
   df_long$DrugB <- factor(df_long$DrugB, levels = unique(rownames(mat)))
+
+  uncertainty_display <- if (is.null(uncertainty_display)) "none" else uncertainty_display
+  df_long$Label <- ifelse(abs(df_long$Score) < 0.1, sprintf("%.3f", df_long$Score), sprintf("%.2f", df_long$Score))
+  if (!is.null(uncertainty) && uncertainty_display %in% c("sem", "ci")) {
+    stat_flipped <- lapply(uncertainty, function(x) apply_plot_flips(x, data_list$conc_A, data_list$conc_B, flip_x, flip_y, FALSE)$mat)
+    if (uncertainty_display == "sem") {
+      df_long$Label <- paste0(df_long$Label, "\n±", sprintf("%.3f", as.vector(t(stat_flipped$sem))))
+    } else {
+      df_long$Label <- paste0(df_long$Label, "\n[", sprintf("%.3f", as.vector(t(stat_flipped$ci_lower))), ", ",
+                              sprintf("%.3f", as.vector(t(stat_flipped$ci_upper))), "]")
+    }
+  }
   
   # Safety guards for parameters
   if (is.null(title) || length(title) == 0 || title == "") {
-    title_text <- paste(model_name, if (model_name == "Data") "Inhibition Map" else "Synergy Landscape")
+    title_text <- paste(cTitle, "map")
   } else {
     title_text <- title
   }
@@ -174,11 +190,11 @@ ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation 
   # Construct plot
   p <- ggplot(df_long, aes(x = DrugA, y = DrugB, fill = Score)) +
     geom_tile(color = "#ffffff", size = 0.5) +
-    geom_text(aes(label = sprintf("%.2f", DisplayScore)), color = "#1e293b", size = 3, fontface = "bold") +
+    geom_text(aes(label = Label), color = "#1e293b", size = if (uncertainty_display == "ci") 2.15 else 3, fontface = "bold") +
     labs(
       title = title_text,
-      x = "Drug A Concentration",
-      y = "Drug B Concentration",
+      x = condition_labels$axis_a,
+      y = condition_labels$axis_b,
       fill = fill_label
     ) +
     theme_cfg$theme
@@ -212,6 +228,7 @@ ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation 
 
 # Redesigned 1D Single-Agent Fit curves side-by-side
 ggplot_single_agent_fits <- function(data_list, theme_preset = "Nature") {
+  condition_labels <- get_condition_plot_labels(data_list)
   conc_A <- data_list$conc_A
   resp_A <- data_list$raw_inhibition[data_list$zero_row, ]
   par_A <- data_list$single_fit_A
@@ -227,11 +244,11 @@ ggplot_single_agent_fits <- function(data_list, theme_preset = "Nature") {
   fit_y_A <- if (!is.null(par_A)) predict_4pl(grid_A, par_A) else approx(x = conc_A, y = resp_A, xout = grid_A, rule = 2)$y
   fit_y_B <- if (!is.null(par_B)) predict_4pl(grid_B, par_B) else approx(x = conc_B, y = resp_B, xout = grid_B, rule = 2)$y
   
-  df_pts_A <- data.frame(Concentration = conc_A, Inhibition = resp_A, Agent = "Drug A")
-  df_fit_A <- data.frame(Concentration = grid_A, Inhibition = fit_y_A, Agent = "Drug A")
+  df_pts_A <- data.frame(Concentration = conc_A, Inhibition = resp_A, Agent = condition_labels$a)
+  df_fit_A <- data.frame(Concentration = grid_A, Inhibition = fit_y_A, Agent = condition_labels$a)
   
-  df_pts_B <- data.frame(Concentration = conc_B, Inhibition = resp_B, Agent = "Drug B")
-  df_fit_B <- data.frame(Concentration = grid_B, Inhibition = fit_y_B, Agent = "Drug B")
+  df_pts_B <- data.frame(Concentration = conc_B, Inhibition = resp_B, Agent = condition_labels$b)
+  df_fit_B <- data.frame(Concentration = grid_B, Inhibition = fit_y_B, Agent = condition_labels$b)
   
   df_pts <- rbind(df_pts_A, df_pts_B)
   df_fit <- rbind(df_fit_A, df_fit_B)
@@ -247,25 +264,20 @@ ggplot_single_agent_fits <- function(data_list, theme_preset = "Nature") {
       x = "Concentration",
       y = "Inhibition"
     ) +
-    scale_color_manual(values = c("Drug A" = "#2563eb", "Drug B" = "#dc2626")) +
-    scale_fill_manual(values = c("Drug A" = "#3b82f6", "Drug B" = "#ef4444")) +
+    scale_color_manual(values = setNames(c("#2563eb", "#dc2626"), c(condition_labels$a, condition_labels$b))) +
+    scale_fill_manual(values = setNames(c("#3b82f6", "#ef4444"), c(condition_labels$a, condition_labels$b))) +
     theme_cfg$theme +
     theme(legend.position = "none")
   
   return(p)
 }
 
-plotly_synergy_surface <- function(data_list, model_name = "Bliss", theme_preset = "Nature", camera_theta = 45, camera_phi = 30, camera_zoom = 1.8, flip_x = FALSE, flip_y = FALSE, flip_z = FALSE) {
-  # Extract values
-  if (model_name == "Data") {
-    mat <- data_list$raw_inhibition
-    cTitle <- "Inhibition"
-    is_div <- FALSE
-  } else {
-    mat <- data_list[[model_name]]$scores
-    cTitle <- paste(model_name, "Score")
-    is_div <- TRUE
-  }
+plotly_synergy_surface <- function(data_list, model_name = "Bliss", theme_preset = "Nature", camera_theta = 45, camera_phi = 30, camera_zoom = 1.8, flip_x = FALSE, flip_y = FALSE, flip_z = FALSE, value_type = "score") {
+  condition_labels <- get_condition_plot_labels(data_list)
+  selected <- select_analysis_matrix(data_list, model_name, value_type)
+  mat <- selected$matrix
+  cTitle <- selected$title
+  is_div <- selected$divergent
   
   conc_A <- data_list$conc_A
   conc_B <- data_list$conc_B
@@ -319,8 +331,9 @@ plotly_synergy_surface <- function(data_list, model_name = "Bliss", theme_preset
       orig_val <- mat[i, j]
       if (flip_z) orig_val <- -orig_val # Reverse negation back to positive for labeling
       hover_text[i, j] <- sprintf(
-        "Drug A: %s<br>Drug B: %s<br>%s: %.2f",
-        colnames(mat)[j], rownames(mat)[i], cTitle, orig_val
+        "%s: %s<br>%s: %s<br>%s: %.2f",
+        condition_labels$a,
+        colnames(mat)[j], condition_labels$b, rownames(mat)[i], cTitle, orig_val
       )
     }
   }
@@ -359,13 +372,13 @@ plotly_synergy_surface <- function(data_list, model_name = "Bliss", theme_preset
   ) %>%
     layout(
       title = list(
-        text = paste("3D Synergy Surface -", model_name),
+        text = paste("3D Surface -", cTitle),
         font = list(family = "sans", size = 16, color = text_color, weight = "bold")
       ),
       scene = list(
         camera = list(eye = list(x = eye_x, y = eye_y, z = eye_z)),
         xaxis = list(
-          title = "Drug A Concentration", 
+          title = condition_labels$axis_a,
           gridcolor = grid_color, 
           backgroundcolor = bg_color, 
           showbackground = TRUE,
@@ -374,7 +387,7 @@ plotly_synergy_surface <- function(data_list, model_name = "Bliss", theme_preset
           ticktext = colnames(mat)
         ),
         yaxis = list(
-          title = "Drug B Concentration", 
+          title = condition_labels$axis_b,
           gridcolor = grid_color, 
           backgroundcolor = bg_color, 
           showbackground = TRUE,
@@ -389,6 +402,41 @@ plotly_synergy_surface <- function(data_list, model_name = "Bliss", theme_preset
     )
   
   return(p)
+}
+
+synergy_barometer_data <- function(data_list, row_index, column_index) {
+  row_index <- as.integer(row_index)
+  column_index <- as.integer(column_index)
+  stopifnot(row_index >= 1, row_index <= nrow(data_list$adjusted_inhibition),
+            column_index >= 1, column_index <= ncol(data_list$adjusted_inhibition))
+  observed <- data_list$adjusted_inhibition[row_index, column_index]
+  models <- c("HSA", "Bliss", "Loewe", "ZIP", "Consensus")
+  reference <- vapply(models, function(model) data_list[[model]]$expected[row_index, column_index], numeric(1))
+  data.frame(
+    Model = factor(models, levels = rev(models)),
+    Reference = reference,
+    Observed = observed,
+    Delta = observed - reference,
+    stringsAsFactors = FALSE
+  )
+}
+
+ggplot_synergy_barometer <- function(data_list, row_index, column_index, theme_preset = "Nature") {
+  condition_labels <- get_condition_plot_labels(data_list)
+  df <- synergy_barometer_data(data_list, row_index, column_index)
+  theme_cfg <- get_theme_palette(theme_preset, is_divergent = TRUE)
+  dose_a <- colnames(data_list$adjusted_inhibition)[as.integer(column_index)]
+  dose_b <- rownames(data_list$adjusted_inhibition)[as.integer(row_index)]
+  ggplot(df, aes(y = Model)) +
+    geom_segment(aes(x = Reference, xend = Observed, yend = Model, color = Delta), size = 2) +
+    geom_point(aes(x = Reference), shape = 21, fill = "white", color = "#334155", size = 4, stroke = 1.1) +
+    geom_point(aes(x = Observed), shape = 18, color = "#111827", size = 4) +
+    scale_color_gradient2(low = theme_cfg$colors["low"], mid = theme_cfg$colors["mid"],
+                          high = theme_cfg$colors["high"], midpoint = 0) +
+    labs(title = paste0("Synergy barometer: ", condition_labels$a, " ", dose_a, ", ", condition_labels$b, " ", dose_b),
+         subtitle = "Circle = reference effect; diamond = observed inhibition",
+         x = "Fractional inhibition", y = NULL, color = "Observed − reference") +
+    theme_cfg$theme
 }
 
 # Keep legacy Base R compatibility signatures so that downloads and simple modes don't crash
@@ -420,22 +468,17 @@ myImagePlotReverse <- function(x, ...) {
   return(max_val)
 }
 
-raw_plot <- function(data_list, model_name = "Bliss", theme_preset = "Nature", theta = -60, phi = 30, flip_x = FALSE, flip_y = FALSE, flip_z = FALSE, ...) {
+raw_plot <- function(data_list, model_name = "Bliss", theme_preset = "Nature", theta = -60, phi = 30, flip_x = FALSE, flip_y = FALSE, flip_z = FALSE, value_type = "score", ...) {
+  condition_labels <- get_condition_plot_labels(data_list)
   # Standard beautiful 3D persp plot fallback
   # Save original par settings and restore on exit to prevent leaking styling to other plots
   old_par <- par(no.readonly = TRUE)
   on.exit(par(old_par))
   
-  # Extract values matching the active model
-  if (model_name == "Data") {
-    mat <- data_list$raw_inhibition
-    cTitle <- "Inhibition"
-    is_div <- FALSE
-  } else {
-    mat <- data_list[[model_name]]$scores
-    cTitle <- paste(model_name, "Score")
-    is_div <- TRUE
-  }
+  selected <- select_analysis_matrix(data_list, model_name, value_type)
+  mat <- selected$matrix
+  cTitle <- selected$title
+  is_div <- selected$divergent
 
   # Load theme preset configuration for background colors and font families
   theme_cfg <- get_theme_palette(theme_preset, is_divergent = is_div)
@@ -487,8 +530,8 @@ raw_plot <- function(data_list, model_name = "Bliss", theme_preset = "Nature", t
   zlab_text <- if (flip_z) paste(cTitle, "(Inverted)") else cTitle
   
   # Format axis labels to indicate if they have been flipped in the perspective
-  xlab_text <- if (flip_x) "Drug A Concentration (Flipped)" else "Drug A Concentration"
-  ylab_text <- if (flip_y) "Drug B Concentration (Flipped)" else "Drug B Concentration"
+  xlab_text <- if (flip_x) paste(condition_labels$axis_a, "(Flipped)") else condition_labels$axis_a
+  ylab_text <- if (flip_y) paste(condition_labels$axis_b, "(Flipped)") else condition_labels$axis_b
   
   # Find strictly formatted bounds for 3D coordinates
   z_min_val <- min(z_t, na.rm = TRUE)

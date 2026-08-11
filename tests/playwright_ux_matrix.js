@@ -17,7 +17,8 @@ const ARTIFACT_DIR = path.resolve(
 );
 const TIMEOUT_MS = Number(process.env.CHECKERBOARDR_TIMEOUT_MS || 120000);
 const ZERO_TOLERANCE = Number(process.env.CHECKERBOARDR_ZERO_TOLERANCE || 0.00005);
-const HEATMAP_LABEL_DECIMALS = 2;
+// Scores below 0.1 use adaptive three-decimal labels to avoid false 0.00 displays.
+const HEATMAP_LABEL_DECIMALS = 3;
 
 const LOW_MAGNITUDE_INTERACTION_JSON = JSON.stringify({
   drug_a: "Small-effect drug A",
@@ -54,7 +55,7 @@ const DATASETS = [
   },
 ];
 
-const MODELS = ["Bliss", "HSA", "Loewe", "ZIP", "Data"];
+const MODELS = ["Bliss", "HSA", "Loewe", "ZIP", "Consensus", "Data"];
 const ENGINES = [
   { id: "2d_ggplot", name: "2D heatmap", output: "image" },
   { id: "3d_plotly", name: "3D Plotly surface", output: "plotly" },

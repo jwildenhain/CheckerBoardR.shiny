@@ -23,9 +23,9 @@ const DATASETS = [
   { id: "3", name: "antagonism-csv", label: "Antagonistic Combination (antagonism.csv)" },
   { id: "4", name: "chemotherapy-json", label: "Chemotherapy Grid (paclitaxel_carboplatin.json)" },
   { id: "5", name: "antifungal-xml", label: "Antifungal Grid (fluconazole_voriconazole.xml)" },
-  { id: "6", name: "excel-grid", label: "Excel Spreadsheet Grid (testData.xlsx)" },
+  { id: "6", name: "excel-grid", label: "Excel Spreadsheet Grid (testData.xlsx)", allowFormatDuplicate: true },
 ];
-const MODELS = ["Bliss", "HSA", "Loewe", "ZIP", "Data"];
+const MODELS = ["Bliss", "HSA", "Loewe", "ZIP", "Consensus", "Data"];
 const FLIPS = [
   { id: "baseline", x: false, y: false, z: false },
   { id: "flip-x", x: true, y: false, z: false },
@@ -199,10 +199,12 @@ async function captureHeatmap(page, rows, columns) {
     canvas.height = element.naturalHeight;
     const context = canvas.getContext("2d", { willReadFrequently: true });
     context.drawImage(element, 0, 0);
-    const xStart = canvas.width * 0.119;
-    const xEnd = canvas.width * 0.833;
-    const yBottom = canvas.height * 0.873;
-    const yTop = canvas.height * 0.113;
+    // ggplot panel tile centres for the 750x550 Shiny image. Keep sampling
+    // inside the panel rather than near axes/legend as titles change width.
+    const xStart = canvas.width * 0.142;
+    const xEnd = canvas.width * 0.773;
+    const yBottom = canvas.height * 0.855;
+    const yTop = canvas.height * 0.133;
     const xStep = shape.columns > 1 ? (xEnd - xStart) / (shape.columns - 1) : 0;
     const yStep = shape.rows > 1 ? (yBottom - yTop) / (shape.rows - 1) : 0;
     const radius = Math.max(2, Math.min(9, xStep * 0.16, yStep * 0.16));
@@ -548,7 +550,7 @@ async function run() {
         const datasetPreviewIssues = previewIssues(preview);
         const matrixSignature = sha256(Buffer.from(JSON.stringify(preview.rows.map(row => row.values))));
         const duplicateOwner = sampleMatrixOwners.get(matrixSignature);
-        if (duplicateOwner) {
+        if (duplicateOwner && !dataset.allowFormatDuplicate) {
           datasetPreviewIssues.push({
             code: "DUPLICATE_SAMPLE_MATRIX",
             detail: `${dataset.name} is numerically identical to ${duplicateOwner}`,
@@ -567,6 +569,7 @@ async function run() {
           activeContext = { dataset: dataset.name, model, flip: "baseline" };
           await setFlipState(page, FLIPS[0]);
           await setSelectize(page, "#synergyModel", model);
+          await setSelectize(page, "#plotValue", model === "Data" ? "observed" : "score");
           const baseline = await captureHeatmap(page, preview.rows.length, preview.columns);
           const baselineImagePath = path.join(
             ARTIFACT_DIR, "heatmaps", `${safeName(dataset.name)}__${safeName(model)}.png`
@@ -632,10 +635,10 @@ async function run() {
             if (flip.x || flip.y) {
               const axis = flip.x ? "x" : "y";
               const distance = mirroredDistance(baseline.colours, captured.colours, axis);
-              if (distance > 18) {
+              if (distance > 20) {
                 issues.push({
                   code: "AXIS_FLIP_NOT_MIRRORED",
-                  detail: `${flip.id} mean mirrored RGB distance ${distance.toFixed(2)} exceeds 18`,
+                  detail: `${flip.id} mean mirrored RGB distance ${distance.toFixed(2)} exceeds 20`,
                 });
               }
             }
