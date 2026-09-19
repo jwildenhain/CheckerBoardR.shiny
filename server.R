@@ -9,8 +9,10 @@ library(plotly)
 source("SynergyCalculations.R")
 source("Make3DPlotFunctions.R")
 
-# Enable verbose un-sanitized error traces in logs for bulletproof debugging
-options(shiny.sanitize.errors = FALSE)
+# Sanitize errors shown in the browser. Full un-sanitized traces are still written
+# to the app log under /var/log/shiny-server/, which is where debugging should read
+# them from; sending them to the client leaks paths and internals to every visitor.
+options(shiny.sanitize.errors = TRUE)
 
 SAMPLE_FILES <- c(
   "1" = "testData3.tab",

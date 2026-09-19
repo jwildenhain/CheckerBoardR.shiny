@@ -24,6 +24,7 @@ shinyUI(fluidPage(
   
   # Include modern typography and high-end visual stylesheets
   tags$head(
+    tags$title("CheckerboardR"),
     tags$style(HTML("
       /* Premium Light Blue Bootstrap Styling */
       body, h1, h2, h3, h4, h5, h6, .shiny-text-output, label {
