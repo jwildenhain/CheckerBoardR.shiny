@@ -57,7 +57,7 @@ async function assertSampleLabels(page, sample, expectedA, expectedB) {
 
 async function run() {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROME_PATH || undefined });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, acceptDownloads: true });
   page.on("pageerror", error => events.push({ type: "pageerror", message: error.message }));
   page.on("console", message => { if (message.type() === "error") events.push({ type: "console-error", message: message.text() }); });
@@ -68,6 +68,10 @@ async function run() {
     await page.locator('a[data-value="Data upload"]').click();
     for (let index = 0; index < expectedFiles.length; index += 1) {
       const filename = expectedFiles[index];
+      await page.waitForFunction(id => {
+        const link = document.querySelector(id);
+        return link && /^session\//.test(link.getAttribute("href") || "");
+      }, `#downloadSample${index + 1}`, { timeout: TIMEOUT });
       const [download] = await Promise.all([
         page.waitForEvent("download", { timeout: TIMEOUT }),
         page.locator(`#downloadSample${index + 1}`).click(),
@@ -75,8 +79,10 @@ async function run() {
       const target = path.join(ARTIFACT_DIR, filename);
       await download.saveAs(target);
       const stat = await fs.stat(target);
-      record(`DOWNLOAD-${index + 1}-${filename}`, download.suggestedFilename() === filename && stat.size > 0,
-        { suggestedFilename: download.suggestedFilename(), bytes: stat.size });
+      const [downloaded, source] = await Promise.all([fs.readFile(target), fs.readFile(path.resolve(filename))]);
+      record(`DOWNLOAD-${index + 1}-${filename}`,
+        download.suggestedFilename() === filename && stat.size > 0 && downloaded.equals(source),
+        { suggestedFilename: download.suggestedFilename(), bytes: stat.size, contentMatchesSource: downloaded.equals(source) });
     }
 
     await assertSampleLabels(page, "4", "Paclitaxel", "Carboplatin");

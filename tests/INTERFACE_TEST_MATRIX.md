@@ -14,6 +14,8 @@ Use this list for each release candidate. Record the deployed URL, commit, brows
 | UX-06 | Synergy barometer | Selected Drug A × Drug B dose | HSA, Bliss, Loewe, ZIP, and Consensus reference/observed/delta rows are finite | `npm run test:ux:capabilities` |
 | UX-07 | Matrix export | Single matrix and replicate analysis | CSV has one row per dose pair and all reference, fitted, score, SEM, and CI columns | `npm run test:ux:capabilities` |
 | UX-08 | Sample downloads and condition labels | 6 bundled downloads; underscore-derived JSON names; Excel metadata fallback | Correct filename/content; non-empty file; dynamic condition, axis, flip, and barometer labels | `npm run test:ux:sample-downloads` |
+| UX-09 | Publication exports | 3 static plot engines × PDF/SVG/EPS | Correct extension and vector signature; non-empty output; no browser or Shiny errors | `npm run test:ux:exports` |
+| UX-10 | MCP integration | Initialize/list; JSON/XML calculation; invalid format/path/tool | Valid requests generate PNG plots and summaries; malformed requests return structured errors without output | `npm run test:mcp` |
 
 ## Numerical and manual release checks
 
@@ -35,4 +37,5 @@ Use this list for each release candidate. Record the deployed URL, commit, brows
 - `test-results/checkerboardr-ux/report.json`
 - `test-results/checkerboardr-capabilities/report.json`
 - `test-results/checkerboardr-sample-downloads/report.json`
+- `test-results/checkerboardr-exports/report.json`
 - Screenshots and downloaded CSV under the corresponding result directories.

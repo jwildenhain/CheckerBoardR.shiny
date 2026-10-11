@@ -64,7 +64,7 @@ get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
       axis.text = element_text(size = 9),
       panel.grid.major = element_line(color = "#f3f4f6"),
       panel.grid.minor = element_blank(),
-      panel.border = element_rect(color = "#e5e7eb", fill = NA, size = 1)
+      panel.border = element_rect(color = "#e5e7eb", fill = NA, linewidth = 1)
     )
     if (is_divergent) {
       colors <- c(low = "#2563eb", mid = "#ffffff", high = "#e11d48") # Blue -> White -> Rose
@@ -78,7 +78,7 @@ get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
       plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
       axis.title = element_text(size = 11, face = "bold"),
       axis.text = element_text(size = 9),
-      axis.line = element_line(color = "#000000", size = 0.8)
+      axis.line = element_line(color = "#000000", linewidth = 0.8)
     )
     if (is_divergent) {
       colors <- c(low = "#059669", mid = "#ffffff", high = "#dc2626") # Green -> White -> Red
@@ -94,7 +94,7 @@ get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
       axis.text = element_text(size = 9),
       panel.background = element_rect(fill = "#e4eef2", color = NA),
       plot.background = element_rect(fill = "#e4eef2", color = NA),
-      panel.grid.major = element_line(color = "#ffffff", size = 1.2),
+      panel.grid.major = element_line(color = "#ffffff", linewidth = 1.2),
       panel.grid.minor = element_blank()
     )
     if (is_divergent) {
@@ -111,7 +111,7 @@ get_theme_palette <- function(theme_preset = "Nature", is_divergent = TRUE) {
       axis.text = element_text(size = 9, color = "#404040"),
       panel.background = element_rect(fill = "#fff1e5", color = NA),
       plot.background = element_rect(fill = "#fff1e5", color = NA),
-      panel.grid.major = element_line(color = "#e6d9ce", size = 0.8),
+      panel.grid.major = element_line(color = "#e6d9ce", linewidth = 0.8),
       panel.grid.minor = element_blank()
     )
     if (is_divergent) {
@@ -189,7 +189,7 @@ ggplot_synergy_heatmap <- function(data_list, model_name = "Bliss", orientation 
 
   # Construct plot
   p <- ggplot(df_long, aes(x = DrugA, y = DrugB, fill = Score)) +
-    geom_tile(color = "#ffffff", size = 0.5) +
+    geom_tile(color = "#ffffff", linewidth = 0.5) +
     geom_text(aes(label = Label), color = "#1e293b", size = if (uncertainty_display == "ci") 2.15 else 3, fontface = "bold") +
     labs(
       title = title_text,
@@ -256,7 +256,7 @@ ggplot_single_agent_fits <- function(data_list, theme_preset = "Nature") {
   theme_cfg <- get_theme_palette(theme_preset, is_divergent = FALSE)
   
   p <- ggplot() +
-    geom_line(data = df_fit, aes(x = Concentration, y = Inhibition, color = Agent), size = 1.2) +
+    geom_line(data = df_fit, aes(x = Concentration, y = Inhibition, color = Agent), linewidth = 1.2) +
     geom_point(data = df_pts, aes(x = Concentration, y = Inhibition, fill = Agent), shape = 21, size = 3, color = "#000000", stroke = 0.8) +
     facet_wrap(~Agent, scales = "free_x") +
     labs(
@@ -428,7 +428,7 @@ ggplot_synergy_barometer <- function(data_list, row_index, column_index, theme_p
   dose_a <- colnames(data_list$adjusted_inhibition)[as.integer(column_index)]
   dose_b <- rownames(data_list$adjusted_inhibition)[as.integer(row_index)]
   ggplot(df, aes(y = Model)) +
-    geom_segment(aes(x = Reference, xend = Observed, yend = Model, color = Delta), size = 2) +
+    geom_segment(aes(x = Reference, xend = Observed, yend = Model, color = Delta), linewidth = 2) +
     geom_point(aes(x = Reference), shape = 21, fill = "white", color = "#334155", size = 4, stroke = 1.1) +
     geom_point(aes(x = Observed), shape = 18, color = "#111827", size = 4) +
     scale_color_gradient2(low = theme_cfg$colors["low"], mid = theme_cfg$colors["mid"],

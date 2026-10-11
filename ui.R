@@ -12,7 +12,11 @@ sample_download_choice <- function(description, output_id, filename) {
     description, " (",
     tags$span(
       class = "sample-file-link-wrap",
-      onclick = "event.stopPropagation();",
+      onclick = paste(
+        "event.stopPropagation();",
+        "if (event.target.classList.contains('shiny-download-link') &&",
+        "!event.target.getAttribute('href')) event.preventDefault();"
+      ),
       downloadLink(output_id, filename, class = "sample-file-link")
     ),
     ")"
@@ -25,6 +29,15 @@ shinyUI(fluidPage(
   # Include modern typography and high-end visual stylesheets
   tags$head(
     tags$title("CheckerboardR"),
+    tags$link(
+      rel = "icon",
+      href = paste0(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E",
+        "%3Crect width='32' height='32' rx='7' fill='%230284c7'/%3E",
+        "%3Cpath d='M7 7h9v9H7zm9 9h9v9h-9z' fill='white'/%3E%3C/svg%3E"
+      )
+    ),
+    tags$script(src = "https://chemgrid.org/chemgrid-analytics.js?v=20260905-2"),
     tags$style(HTML("
       /* Premium Light Blue Bootstrap Styling */
       body, h1, h2, h3, h4, h5, h6, .shiny-text-output, label {
@@ -392,7 +405,7 @@ shinyUI(fluidPage(
   div(
     class = "header-bar",
     h1("CheckerboardR", span("a web-tool for synergy calculations", class = "subtitle")),
-    span("v2.1.2", class = "version-badge")
+    span("v2.1.3", class = "version-badge")
   ),
   
   sidebarLayout(
@@ -600,7 +613,7 @@ shinyUI(fluidPage(
         tabPanel("News",
                  h4("News & Release Notes"),
                  h5("August 11, 2026"),
-                 p(HTML("<b>v2.1.2 Data Provenance & Analysis Extension:</b><br>",
+                 p(HTML("<b>v2.1.3 Production Readiness Release:</b><br>",
                         "• Added score, reference-effect, observed-response, and ZIP fitted-response matrix views.<br>",
                         "• Added matched-replicate SD, SEM, and bootstrap 95% confidence intervals, including labelled 2D heatmaps and full-precision CSV export.<br>",
                         "• Added conservative HSA/Bliss/Loewe Consensus analysis, dose-pair synergy barometers, and explicit fitted-baseline correction modes.<br>",

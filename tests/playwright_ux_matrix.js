@@ -321,7 +321,7 @@ async function run() {
   const fitModes = selectByEnvironment(FIT_MODES, "CHECKERBOARDR_FIT_MODES");
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
 
-  const browser = await chromium.launch({ headless: process.env.HEADED !== "1" });
+  const browser = await chromium.launch({ headless: process.env.HEADED !== "1", executablePath: process.env.PLAYWRIGHT_CHROME_PATH || undefined });
   const results = [];
   const events = [];
   let activeContext = {};

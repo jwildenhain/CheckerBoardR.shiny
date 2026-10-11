@@ -81,7 +81,7 @@ function replicateCsv(offsets) {
 
 async function run() {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROME_PATH || undefined });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
   page.on("pageerror", error => events.push({ type: "pageerror", message: error.message }));
   page.on("console", message => { if (message.type() === "error") events.push({ type: "console-error", message: message.text() }); });

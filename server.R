@@ -603,7 +603,7 @@ shinyServer(function(input, output, session) {
       w <- if (isTRUE(input$plotSize)) input$myWidth / 72 else 750 / 72
       h <- if (isTRUE(input$plotSize)) input$myHeight / 72 else 550 / 72
       
-      postscript(file, horizontal = FALSE, onefile = FALSE, paper = "special", width = w, height = h)
+      grDevices::cairo_ps(file, onefile = FALSE, width = w, height = h)
       if (input$plotEngine == "2d_ggplot") {
         p <- ggplot_synergy_heatmap(res, input$synergyModel, input$myOrientation, input$themePreset, input$myTitle,
                                     flip_x = isTRUE(input$flipDataX), flip_y = isTRUE(input$flipDataY),
@@ -634,7 +634,7 @@ shinyServer(function(input, output, session) {
       w <- if (isTRUE(input$plotSize)) input$myWidth / 72 else 750 / 72
       h <- if (isTRUE(input$plotSize)) input$myHeight / 72 else 550 / 72
       
-      pdf(file, width = w, height = h)
+      grDevices::cairo_pdf(file, onefile = TRUE, width = w, height = h)
       if (input$plotEngine == "2d_ggplot") {
         p <- ggplot_synergy_heatmap(res, input$synergyModel, input$myOrientation, input$themePreset, input$myTitle,
                                     flip_x = isTRUE(input$flipDataX), flip_y = isTRUE(input$flipDataY),

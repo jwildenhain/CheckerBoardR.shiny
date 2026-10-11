@@ -69,7 +69,7 @@ def execute_synergy_R(params, output_path):
     theme_preset = settings.get("theme_preset", "Nature")
     orientation = settings.get("orientation", "synergism")
 
-    allowed = {"data_type": {"viability", "inhibition"}, "synergy_model": {"Data", "HSA", "Bliss", "Loewe", "ZIP"}, "plot_engine": {"2d_ggplot", "1d_curves", "3d_base"}, "theme_preset": {"Nature", "Science", "The Economist", "Financial Times"}, "orientation": {"synergism", "antagonism"}}
+    allowed = {"data_type": {"viability", "inhibition"}, "synergy_model": {"Data", "HSA", "Bliss", "Loewe", "ZIP", "Consensus"}, "plot_engine": {"2d_ggplot", "1d_curves", "3d_base"}, "theme_preset": {"Nature", "Science", "The Economist", "Financial Times"}, "orientation": {"synergism", "antagonism"}}
     chosen = {"data_type": data_type, "synergy_model": synergy_model, "plot_engine": plot_engine, "theme_preset": theme_preset, "orientation": orientation}
     if any(value not in allowed[key] for key, value in chosen.items()):
         raise ValueError("Unsupported analysis setting")
@@ -198,7 +198,7 @@ def main():
                         },
                         "serverInfo": {
                             "name": "checkerboardr-mcp-server",
-                            "version": "2.1.2"
+                            "version": "2.1.3"
                         }
                     }
                 }
@@ -216,7 +216,7 @@ def main():
                         "tools": [
                             {
                                 "name": "calculate_synergy_mcp",
-                                "description": "Loads a structured drug combination payload (JSON or XML), runs synergy calculations (HSA/Bliss/Loewe/ZIP) using the R backend, and saves the rendered plot as an image.",
+                                "description": "Loads a structured drug combination payload (JSON or XML), runs synergy calculations (HSA/Bliss/Loewe/ZIP/Consensus) using the R backend, and saves the rendered plot as an image.",
                                 "inputSchema": {
                                     "type": "object",
                                     "properties": {
@@ -249,12 +249,20 @@ def main():
                 arguments = params.get("arguments", {})
                 
                 if tool_name == "calculate_synergy_mcp":
-                    data_format = arguments.get("data_format")
-                    data_content = arguments.get("data_content")
-                    output_path = os.path.abspath(arguments.get("output_path"))
-                    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-                    
                     try:
+                        data_format = arguments.get("data_format")
+                        data_content = arguments.get("data_content")
+                        requested_output = arguments.get("output_path")
+                        if data_format not in {"json", "xml"}:
+                            raise ValueError("data_format must be 'json' or 'xml'")
+                        if not isinstance(data_content, str) or not data_content.strip():
+                            raise ValueError("data_content must be a non-empty string")
+                        if not isinstance(requested_output, str) or not requested_output.strip():
+                            raise ValueError("output_path must be a non-empty absolute PNG path")
+                        output_path = os.path.abspath(requested_output)
+                        if not os.path.isabs(requested_output) or not output_path.lower().endswith(".png"):
+                            raise ValueError("output_path must be an absolute path ending in .png")
+                        os.makedirs(os.path.dirname(output_path), exist_ok=True)
                         if data_format == "json":
                             parsed_data = json.loads(data_content)
                         else:
@@ -301,6 +309,17 @@ def main():
                                 "isError": True
                             }
                         }
+                    sys.stdout.write(json.dumps(response) + "\n")
+                    sys.stdout.flush()
+                elif msg_id is not None:
+                    response = {
+                        "jsonrpc": "2.0",
+                        "id": msg_id,
+                        "error": {
+                            "code": -32602,
+                            "message": f"Unknown tool: {tool_name}"
+                        }
+                    }
                     sys.stdout.write(json.dumps(response) + "\n")
                     sys.stdout.flush()
             else:

@@ -511,7 +511,7 @@ async function run() {
   const heatmapSource = await fs.readFile(path.resolve(__dirname, "..", "Make3DPlotFunctions.R"), "utf8");
   const scalarLabelIfelse = /geom_text\([\s\S]*?ifelse\(flip_z,\s*abs\(Score\),\s*Score\)/.test(heatmapSource);
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
-  const browser = await chromium.launch({ headless: process.env.HEADED !== "1" });
+  const browser = await chromium.launch({ headless: process.env.HEADED !== "1", executablePath: process.env.PLAYWRIGHT_CHROME_PATH || undefined });
   const results = [];
   const events = [];
   const sampleMatrixOwners = new Map();
