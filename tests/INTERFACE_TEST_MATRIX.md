@@ -17,6 +17,7 @@ Use this list for each release candidate. Record the deployed URL, commit, brows
 | UX-09 | Publication exports | 3 static plot engines × PDF/SVG/EPS | Correct extension and vector signature; non-empty output; no browser or Shiny errors | `npm run test:ux:exports` |
 | UX-10 | MCP integration | Initialize/list; JSON/XML calculation; invalid format/path/tool | Valid requests generate PNG plots and summaries; malformed requests return structured errors without output | `npm run test:mcp` |
 | UX-11 | Search visibility | Canonical, title/description, robots, Open Graph, structured data, sitemap, static guide and preview image | All discovery metadata is present, valid and publicly retrievable | `npm run test:seo` |
+| UX-12 | FICI analysis | Endpoint summary and matrix export | Minimum FICI, interpretation and selected endpoint are displayed; CSV contains the FICI matrix and audit fields | `npm run test:ux:capabilities` |
 
 ## Numerical and manual release checks
 

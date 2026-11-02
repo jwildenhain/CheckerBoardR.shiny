@@ -64,10 +64,11 @@ with tempfile.TemporaryDirectory(prefix="checkerboardr-mcp-") as directory:
 
     assert completed.returncode == 0, completed.stderr
     assert len(responses) == 7, responses
-    assert responses[0]["result"]["serverInfo"]["version"] == "2.1.4"
+    assert responses[0]["result"]["serverInfo"]["version"] == "2.1.5"
     assert responses[1]["result"]["tools"][0]["name"] == "calculate_synergy_mcp"
     assert responses[2]["result"]["isError"] is False
     assert "Paclitaxel" in responses[2]["result"]["content"][0]["text"]
+    assert "Minimum FICI:" in responses[2]["result"]["content"][0]["text"]
     assert responses[3]["result"]["isError"] is False
     assert "Fluconazole" in responses[3]["result"]["content"][0]["text"]
     assert responses[4]["result"]["isError"] is True

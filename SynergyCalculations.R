@@ -280,7 +280,8 @@ get_single_agent_curve <- function(conc, resp, use_fit = TRUE) {
 
 # Complete Synergy Calculator Function
 calculate_synergy <- function(xx, data_type = "viability", use_fit = TRUE, control_row = 1,
-                              control_col = 1, baseline_method = "none") {
+                              control_col = 1, baseline_method = "none",
+                              fici_endpoint = 0.9) {
   # Normalize data matrix to [0, 1] viability and inhibition
   norm <- normalize_data(xx, data_type, control_row, control_col)
   original_I_matrix <- norm$inhibition
@@ -317,6 +318,37 @@ calculate_synergy <- function(xx, data_type = "viability", use_fit = TRUE, contr
   # In a standard checkerboard, row 1 is Drug B = 0, column 1 is Drug A = 0
   resp_A <- I_matrix[zero_row, ]
   resp_B <- I_matrix[, zero_col]
+
+  fici_endpoint <- as.numeric(fici_endpoint)
+  if (length(fici_endpoint) != 1 || !is.finite(fici_endpoint) ||
+      fici_endpoint <= 0 || fici_endpoint > 1) {
+    stop("FICI endpoint must be a single inhibition fraction greater than 0 and at most 1.")
+  }
+  endpoint_dose <- function(concentrations, responses) {
+    qualifying <- which(concentrations > 0 & responses >= fici_endpoint)
+    if (!length(qualifying)) return(NA_real_)
+    min(concentrations[qualifying])
+  }
+  mic_A <- endpoint_dose(conc_A, resp_A)
+  mic_B <- endpoint_dose(conc_B, resp_B)
+  fici_matrix <- matrix(NA_real_, nr, nc, dimnames = dimnames(I_matrix))
+  if (is.finite(mic_A) && is.finite(mic_B)) {
+    for (i in seq_len(nc)) for (j in seq_len(nr)) {
+      if (i != zero_col && j != zero_row && I_matrix[j, i] >= fici_endpoint) {
+        fici_matrix[j, i] <- conc_A[i] / mic_A + conc_B[j] / mic_B
+      }
+    }
+  }
+  minimum_fici <- if (any(is.finite(fici_matrix))) min(fici_matrix, na.rm = TRUE) else NA_real_
+  fici_interpretation <- if (!is.finite(minimum_fici)) {
+    "Not calculable: both single agents must reach the selected endpoint within the tested range"
+  } else if (minimum_fici <= 0.5) {
+    "Synergy"
+  } else if (minimum_fici > 4) {
+    "Antagonism"
+  } else {
+    "Indifference"
+  }
   
   # Fit single-agent curves
   model_A <- get_single_agent_curve(conc_A, resp_A, use_fit)
@@ -438,6 +470,9 @@ calculate_synergy <- function(xx, data_type = "viability", use_fit = TRUE, contr
     Loewe = list(scores = loewe_scores, expected = loewe_expected),
     ZIP = list(scores = zip_scores, expected = zip_expected, fitted = zip_fitted),
     Consensus = list(scores = consensus_scores, expected = consensus_expected),
+    FICI = list(index = fici_matrix, minimum = minimum_fici,
+                interpretation = fici_interpretation, endpoint = fici_endpoint,
+                mic_A = mic_A, mic_B = mic_B),
     replicate_statistics = NULL
   )
 }
@@ -507,7 +542,7 @@ summarize_replicate_metric <- function(matrices, bootstrap_indices) {
 calculate_replicate_synergy <- function(matrices, data_type = "viability", use_fit = TRUE,
                                         control_row = 1, control_col = 1,
                                         baseline_method = "none", iterations = 100,
-                                        seed = 123) {
+                                        seed = 123, fici_endpoint = 0.9) {
   matrices <- validate_replicate_matrices(matrices)
   iterations <- as.integer(iterations)
   if (!is.finite(iterations) || iterations < 20) {
@@ -518,7 +553,7 @@ calculate_replicate_synergy <- function(matrices, data_type = "viability", use_f
     calculate_synergy(
       mat, data_type = data_type, use_fit = use_fit,
       control_row = control_row, control_col = control_col,
-      baseline_method = baseline_method
+      baseline_method = baseline_method, fici_endpoint = fici_endpoint
     )
   })
   adjusted_matrices <- lapply(replicate_results, `[[`, "adjusted_inhibition")
@@ -528,7 +563,7 @@ calculate_replicate_synergy <- function(matrices, data_type = "viability", use_f
   result <- calculate_synergy(
     mean_adjusted, data_type = "inhibition", use_fit = use_fit,
     control_row = control_row, control_col = control_col,
-    baseline_method = "none"
+    baseline_method = "none", fici_endpoint = fici_endpoint
   )
   result$original_inhibition <- Reduce(`+`, original_matrices) / length(original_matrices)
   result$baseline_method <- baseline_method
@@ -629,6 +664,10 @@ build_matrix_export <- function(result) {
     path <- paths[[column_name]]
     exported[[column_name]] <- at_cells(result[[path[[1]]]][[path[[2]]]])
   }
+  exported$FICI <- at_cells(result$FICI$index)
+  exported$FICI_endpoint <- result$FICI$endpoint
+  exported$FICI_minimum <- result$FICI$minimum
+  exported$FICI_interpretation <- result$FICI$interpretation
 
   if (!is.null(result$replicate_statistics)) {
     stat_names <- c("sd", "sem", "ci_lower", "ci_upper")

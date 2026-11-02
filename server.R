@@ -375,7 +375,8 @@ shinyServer(function(input, output, session) {
         use_fit = isTRUE(input$useFit),
         control_row = if (effectiveDataType() == "viability") input$ctrlRow else 1,
         control_col = if (effectiveDataType() == "viability") input$ctrlCol else 1,
-        baseline_method = if (is.null(input$baselineMethod)) "none" else input$baselineMethod
+        baseline_method = if (is.null(input$baselineMethod)) "none" else input$baselineMethod,
+        fici_endpoint = if (is.null(input$ficiEndpoint)) 0.9 else input$ficiEndpoint / 100
       )
       res <- if (length(matrices) > 1) {
         do.call(calculate_replicate_synergy, c(list(
@@ -533,6 +534,11 @@ shinyServer(function(input, output, session) {
     
     data.frame(
       Scientific_Metric = c(
+        "Minimum FICI (ΣFIC)",
+        "FICI interpretation",
+        "FICI inhibition endpoint",
+        sprintf("%s MIC at endpoint", condition_a),
+        sprintf("%s MIC at endpoint", condition_b),
         paste("Max Synergy /", par_name),
         sprintf("Max Synergy Position (%s, %s)", condition_a, condition_b),
         paste("Max Antagonism / Min", par_name),
@@ -549,6 +555,11 @@ shinyServer(function(input, output, session) {
         "Bootstrap iterations"
       ),
       Computed_Value = c(
+        if (is.finite(res$FICI$minimum)) sprintf("%.4f", res$FICI$minimum) else "Not calculable",
+        res$FICI$interpretation,
+        sprintf("%.1f%%", 100 * res$FICI$endpoint),
+        if (is.finite(res$FICI$mic_A)) sprintf("%.6g", res$FICI$mic_A) else "Not reached",
+        if (is.finite(res$FICI$mic_B)) sprintf("%.6g", res$FICI$mic_B) else "Not reached",
         sprintf("%.4f", max_score),
         sprintf("%s, %s", colnames(scores)[max_idx[2]], rownames(scores)[max_idx[1]]),
         sprintf("%.4f", min_score),

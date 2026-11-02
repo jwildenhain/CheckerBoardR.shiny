@@ -26,7 +26,7 @@ const CANONICAL = "https://checkerboardr.chemgrid.org/";
     if (metadata.canonical !== CANONICAL) throw new Error(`Unexpected canonical: ${metadata.canonical}`);
     if (!metadata.robots?.includes("index")) throw new Error("Indexing directive is missing");
     if (!metadata.ogTitle || !metadata.ogImage) throw new Error("Open Graph metadata is incomplete");
-    if (!metadata.jsonLd.some(item => item["@type"] === "WebApplication" && item.softwareVersion === "2.1.4")) {
+    if (!metadata.jsonLd.some(item => item["@type"] === "WebApplication" && item.softwareVersion === "2.1.5")) {
       throw new Error("WebApplication structured data is missing");
     }
     for (const path of ["robots.txt", "sitemap.xml", "checkerboard-synergy-guide.html", "checkerboardr-synergy-heatmap.png"]) {

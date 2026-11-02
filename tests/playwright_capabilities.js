@@ -120,6 +120,11 @@ async function run() {
                { errors, heatmapSha256: await heatmapHash(page) });
       }
     }
+    const ficiSummary = await page.locator("#checkerboardStatsTable").innerText();
+    record("CAP-02b-fici-summary", ficiSummary.includes("Minimum FICI (ΣFIC)")
+      && ficiSummary.includes("FICI interpretation")
+      && ficiSummary.includes("FICI inhibition endpoint\t90.0%"),
+      { summary: ficiSummary });
 
     await setSelect(page, "#synergyModel", "Consensus");
     await setSelect(page, "#plotValue", "score");
@@ -170,7 +175,8 @@ async function run() {
     const csvPath = path.join(ARTIFACT_DIR, "score-reference-export.csv");
     await download.saveAs(csvPath);
     const csv = await fs.readFile(csvPath, "utf8");
-    const required = ["HSA_reference", "Bliss_score", "Loewe_reference", "ZIP_fitted", "Consensus_score", "Bliss_score_sem", "ZIP_fitted_ci_upper"];
+    const required = ["HSA_reference", "Bliss_score", "Loewe_reference", "ZIP_fitted", "Consensus_score",
+      "FICI", "FICI_endpoint", "FICI_minimum", "FICI_interpretation", "Bliss_score_sem", "ZIP_fitted_ci_upper"];
     record("CAP-07-score-reference-export", required.every(name => csv.split("\n")[0].includes(name)),
            { bytes: Buffer.byteLength(csv), header: csv.split("\n")[0] });
 

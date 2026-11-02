@@ -1,7 +1,7 @@
 {
   "name": "checkerboardr-shiny-ux-tests",
   "private": true,
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "Browser regression tests for the CheckerBoardR Shiny application",
   "scripts": {
     "test:unit": "Rscript unit_test.R && Rscript tests/capability_unit_test.R",

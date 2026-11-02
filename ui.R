@@ -33,12 +33,12 @@ shinyUI(fluidPage(
       name = "description",
       content = paste(
         "Free online checkerboard assay analysis for drug-combination synergy and antagonism.",
-        "Upload dose matrices and compare HSA, Bliss, Loewe, ZIP and consensus models with publication-ready heatmaps."
+        "Upload dose matrices and calculate FICI, HSA, Bliss, Loewe, ZIP and consensus interactions with publication-ready heatmaps."
       )
     ),
     tags$meta(
       name = "keywords",
-      content = "checkerboard assay, drug synergy calculator, Bliss synergy, Loewe additivity, ZIP synergy, HSA, antagonism, dose response heatmap"
+      content = "checkerboard assay, drug synergy calculator, FICI calculator, fractional inhibitory concentration index, antibiotic synergy, antifungal synergy, cancer drug combinations, Bliss synergy, Loewe additivity, ZIP synergy, HSA, antagonism"
     ),
     tags$meta(name = "robots", content = "index, follow, max-image-preview:large"),
     tags$link(rel = "canonical", href = "https://checkerboardr.chemgrid.org/"),
@@ -47,7 +47,7 @@ shinyUI(fluidPage(
     tags$meta(property = "og:title", content = "CheckerboardR — Drug Combination Synergy Calculator"),
     tags$meta(
       property = "og:description",
-      content = "Analyse checkerboard dose matrices with HSA, Bliss, Loewe, ZIP and consensus models and export publication-ready synergy heatmaps."
+      content = "Analyze drug combinations and calculate FICI, HSA, Bliss, Loewe, ZIP and consensus interactions from checkerboard dose matrices."
     ),
     tags$meta(property = "og:url", content = "https://checkerboardr.chemgrid.org/"),
     tags$meta(property = "og:image", content = "https://checkerboardr.chemgrid.org/checkerboardr-synergy-heatmap.png"),
@@ -62,16 +62,16 @@ shinyUI(fluidPage(
         '{"@context":"https://schema.org","@type":"WebApplication",',
         '"name":"CheckerboardR","alternateName":"CheckerBoardR.shiny",',
         '"url":"https://checkerboardr.chemgrid.org/",',
-        '"description":"Free online checkerboard assay analysis for drug-combination synergy and antagonism using HSA, Bliss, Loewe, ZIP and consensus models.",',
+        '"description":"Analyze antibiotic, antifungal and cancer drug combinations with FICI, HSA, Bliss, Loewe, ZIP and consensus checkerboard calculations.",',
         '"applicationCategory":"ScientificApplication","operatingSystem":"Web",',
-        '"softwareVersion":"2.1.4",',
+        '"softwareVersion":"2.1.5",',
         '"image":"https://checkerboardr.chemgrid.org/checkerboardr-synergy-heatmap.png",',
         '"isAccessibleForFree":true,',
         '"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},',
         '"creator":{"@type":"Organization","name":"ChemGrid"},',
         '"isPartOf":{"@type":"WebSite","name":"ChemGrid","url":"https://chemgrid.org/"},',
         '"codeRepository":"https://github.com/jwildenhain/CheckerBoardR.shiny",',
-        '"featureList":["Checkerboard assay analysis","HSA synergy","Bliss independence","Loewe additivity","ZIP synergy","Consensus scoring","Publication-ready heatmaps","CSV, TAB, JSON, XML and Excel input"]}'
+        '"featureList":["Checkerboard assay analysis","Fractional inhibitory concentration index (FICI)","Antibiotic and antifungal combination analysis","Cancer drug combination analysis","HSA synergy","Bliss independence","Loewe additivity","ZIP synergy","Consensus scoring","Publication-ready heatmaps"]}'
       ))
     ),
     tags$link(
@@ -449,8 +449,8 @@ shinyUI(fluidPage(
   # Page Header Banner
   div(
     class = "header-bar",
-    h1("CheckerboardR", span("a web-tool for synergy calculations", class = "subtitle")),
-    span("v2.1.4", class = "version-badge")
+    h1("CheckerboardR", span("Analyze drug combinations and perform checkerboard synergy calculations", class = "subtitle")),
+    span("v2.1.5", class = "version-badge")
   ),
   
   sidebarLayout(
@@ -507,6 +507,10 @@ shinyUI(fluidPage(
                     choices = list("None (preserve current behaviour)" = "none",
                                    "Correct negative inhibition values only" = "negative",
                                    "Correct the full inhibition matrix" = "all")),
+
+        numericInput("ficiEndpoint", "FICI inhibition endpoint (%):", value = 90,
+                     min = 1, max = 100, step = 1),
+        helpText("FICI uses the lowest tested single-agent concentrations and combination wells reaching this endpoint."),
         
         conditionalPanel(
           condition = "input.dataType == 'viability'",
@@ -593,10 +597,10 @@ shinyUI(fluidPage(
       tabsetPanel(
         tabPanel("About",
                  h3("Welcome to CheckerboardR Synergy Calculator"),
-                 p("CheckerboardR is a professional, high-performance web tool designed for pharmacologists and cancer researchers to analyze combined drug screens. By uploading raw cell viability or optical density (OD) readings from multi-well plates, the tool calculates complete interaction surfaces to determine if a combination is synergistic, additive, or antagonistic."),
+                 p("Analyze drug combinations and perform checkerboard synergy calculations. CheckerboardR accepts cell viability or optical density (OD) matrices and evaluates synergistic, indifferent, or antagonistic interactions for antibiotic, antifungal, and anticancer studies."),
                  h4("Key Features"),
                  tags$ul(
-                   tags$li("Flexible support for all four reference models: Highest Single Agent (HSA), Bliss Independence, Loewe Additivity, and Zero Interaction Potency (ZIP)."),
+                   tags$li("Calculates the fractional inhibitory concentration index (FICI/ΣFIC) at a selectable inhibition endpoint, alongside HSA, Bliss, Loewe, ZIP, and consensus response-surface models."),
                    tags$li("Zero-dependency robust single-agent 4-parameter logistic (4PL) Hill curve fitting with linear monotonic interpolation fallbacks."),
                    tags$li("Stunning interactive 3D WebGL visualizations via Plotly and high-resolution 2D contoured heatmaps using ggplot2."),
                    tags$li("Export vectors directly in EPS, PDF, and SVG formats matching styling guidelines from premier scientific journals.")
@@ -609,7 +613,11 @@ shinyUI(fluidPage(
                         "• <b>Structured XML Schema:</b> Strongly-typed tag structures mapping drug components, dose gradients, and settings.")),
                  br(),
                  h5("Academic & Formula References"),
-                 p(HTML("Borisy A, Keith C, et al. <i>Multicomponent therapeutics for networked systems.</i> Nat Rev Drug Discov. 2005;4(1):71-78.<br>"),
+                 p(HTML("Odds FC. <i>Synergy, antagonism, and what the chequerboard puts between them.</i> J Antimicrob Chemother. 2003;52(1):1. doi:10.1093/jac/dkg301.<br>"),
+                   HTML("Hall MJ, Middleton RF, Westmacott D. <i>The fractional inhibitory concentration (FIC) index as a measure of synergy.</i> J Antimicrob Chemother. 1983;11(5):427-433. doi:10.1093/jac/11.5.427.<br>"),
+                   HTML("Cuenca-Estrella M. <i>Combinations of antifungal agents in therapy—what value are they?</i> J Antimicrob Chemother. 2004;54(5):854-869. doi:10.1093/jac/dkh434.<br>"),
+                   HTML("Holbeck SL, et al. <i>The National Cancer Institute ALMANAC: a comprehensive screening resource for the detection of anticancer drug pairs with enhanced therapeutic activity.</i> Cancer Res. 2017;77(13):3564-3576. doi:10.1158/0008-5472.CAN-17-0489.<br>"),
+                   HTML("Ianevski A, Giri AK, Aittokallio T. <i>SynergyFinder 2.0: visual analytics of multi-drug combination synergies.</i> Nucleic Acids Res. 2020;48(W1):W488-W493. doi:10.1093/nar/gkaa216.<br>"),
                    HTML("Yadav B, et al. <i>Zero Interaction Potency (ZIP) model for drug combinations.</i> Comput Struct Biotechnol J. 2015;13:504-513."))
         ),
         
@@ -657,6 +665,12 @@ shinyUI(fluidPage(
         
         tabPanel("News",
                  h4("News & Release Notes"),
+                 h5("November 2, 2026"),
+                 p(HTML("<b>v2.1.5 FICI & Scientific References Release:</b><br>",
+                        "• Added endpoint-based fractional inhibitory concentration index (FICI/ΣFIC) calculations and CSV/MCP reporting.<br>",
+                        "• Added a selectable inhibition endpoint with conservative synergy, indifference, and antagonism interpretation.<br>",
+                        "• Expanded antibacterial, antifungal, and anticancer combination references and search descriptions.")),
+                 br(),
                  h5("August 11, 2026"),
                  p(HTML("<b>v2.1.4 Search Visibility Release:</b><br>",
                         "• Added score, reference-effect, observed-response, and ZIP fitted-response matrix views.<br>",

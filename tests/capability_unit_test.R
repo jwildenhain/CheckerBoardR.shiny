@@ -48,6 +48,27 @@ none <- calculate_synergy(base, data_type = "inhibition", use_fit = FALSE, basel
 negative <- calculate_synergy(base, data_type = "inhibition", use_fit = FALSE, baseline_method = "negative")
 all_cells <- calculate_synergy(base, data_type = "inhibition", use_fit = FALSE, baseline_method = "all")
 
+assert_true(is.list(none$FICI) && identical(dim(none$FICI$index), dim(base)),
+            "FICI result or dose-pair matrix is missing.")
+assert_true(identical(none$FICI$endpoint, 0.9),
+            "Default FICI endpoint must be 90% inhibition.")
+
+fici_grid <- matrix(c(
+  0.00, 0.20, 0.60, 0.95,
+  0.10, 0.90, 0.65, 0.92,
+  0.50, 0.90, 0.94, 0.97,
+  0.95, 0.96, 0.98, 0.99
+), nrow = 4, byrow = TRUE,
+dimnames = list(c("0", "2", "4", "8"), c("0", "1", "2", "4")))
+fici_result <- calculate_synergy(fici_grid, data_type = "inhibition", use_fit = FALSE,
+                                 fici_endpoint = 0.9)
+assert_true(isTRUE(all.equal(fici_result$FICI$mic_A, 4)) &&
+              isTRUE(all.equal(fici_result$FICI$mic_B, 8)),
+            "FICI single-agent endpoint concentrations are incorrect.")
+assert_true(isTRUE(all.equal(fici_result$FICI$minimum, 0.5)) &&
+              identical(fici_result$FICI$interpretation, "Synergy"),
+            "FICI minimum or conservative interpretation is incorrect.")
+
 assert_true(identical(none$original_inhibition, none$adjusted_inhibition),
             "No baseline correction must preserve the original inhibition matrix.")
 assert_true(identical(negative$adjusted_inhibition[base >= 0], negative$original_inhibition[base >= 0]),

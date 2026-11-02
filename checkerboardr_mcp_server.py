@@ -119,8 +119,10 @@ min_score <- min(scores, na.rm = TRUE)
 mean_score <- mean(scores, na.rm = TRUE)
 
 cat("STATS_START\\n")
-cat(sprintf('{{"max_synergy": %.4f, "min_synergy": %.4f, "mean_synergy": %.4f, "drug_a_ic50": "%s", "drug_b_ic50": "%s"}}\\n',
-            max_score, min_score, mean_score,
+fici_value <- if (is.finite(res$FICI$minimum)) sprintf("%.4f", res$FICI$minimum) else "null"
+cat(sprintf('{{"max_synergy": %.4f, "min_synergy": %.4f, "mean_synergy": %.4f, "minimum_fici": %s, "fici_interpretation": "%s", "fici_endpoint": %.4f, "drug_a_ic50": "%s", "drug_b_ic50": "%s"}}\\n',
+            max_score, min_score, mean_score, fici_value,
+            res$FICI$interpretation, res$FICI$endpoint,
             if (!is.null(res$single_fit_A)) sprintf("%.4f", res$single_fit_A[3]) else "N/A",
             if (!is.null(res$single_fit_B)) sprintf("%.4f", res$single_fit_B[3]) else "N/A"))
 cat("STATS_END\\n")
@@ -198,7 +200,7 @@ def main():
                         },
                         "serverInfo": {
                             "name": "checkerboardr-mcp-server",
-                            "version": "2.1.4"
+                            "version": "2.1.5"
                         }
                     }
                 }
@@ -216,7 +218,7 @@ def main():
                         "tools": [
                             {
                                 "name": "calculate_synergy_mcp",
-                                "description": "Loads a structured drug combination payload (JSON or XML), runs synergy calculations (HSA/Bliss/Loewe/ZIP/Consensus) using the R backend, and saves the rendered plot as an image.",
+                                "description": "Loads a structured drug combination payload (JSON or XML), calculates FICI plus HSA/Bliss/Loewe/ZIP/Consensus interactions using the R backend, and saves the rendered plot as an image.",
                                 "inputSchema": {
                                     "type": "object",
                                     "properties": {
@@ -278,6 +280,8 @@ def main():
                             f"Max Synergy: {stats.get('max_synergy')}\n"
                             f"Max Antagonism: {stats.get('min_synergy')}\n"
                             f"Mean Grid Score: {stats.get('mean_synergy')}\n"
+                            f"Minimum FICI: {stats.get('minimum_fici')}\n"
+                            f"FICI Interpretation: {stats.get('fici_interpretation')}\n"
                             f"Drug A IC50 (Fitted 4PL): {stats.get('drug_a_ic50')}\n"
                             f"Drug B IC50 (Fitted 4PL): {stats.get('drug_b_ic50')}\n"
                         )

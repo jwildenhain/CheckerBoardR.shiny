@@ -1,7 +1,7 @@
-# CheckerBoardR.shiny (v2.1.4)
+# CheckerBoardR.shiny (v2.1.5)
 ##### Modernized Shiny Webportal for Multi-Model Drug Combination Synergy & Antagonism Analysis
 
-CheckerBoardR.shiny is a high-performance, premium web portal and modeling platform designed to perform drug combination synergy, antagonism, and dose-response curve fitting. It supports relative cell viability normalization, percent inhibition mapping, and robust mathematical synergy models.
+CheckerBoardR.shiny analyzes drug combinations and performs checkerboard synergy calculations for antibiotic, antifungal, and cancer studies. It supports endpoint-based fractional inhibitory concentration indices (FICI), relative cell viability normalization, percent inhibition mapping, and multiple response-surface models.
 
 Online Portal: http://chemgrid.org:3838/checkerboardr/
 
@@ -11,6 +11,13 @@ TyersChem2 development deployment: http://checkerboardr.198.58.117.28.nip.io/
 ![CheckerBoardR Premium Data Visualization Interface](screenshot_data_visualization.png)
 
 ---
+
+## v2.1.5 FICI and Scientific References Release
+
+* Calculates a dose-pair FICI matrix and minimum ΣFIC using a user-selectable inhibition endpoint.
+* Reports single-agent endpoint concentrations and interprets minimum FICI conservatively: synergy ≤0.5, antagonism >4, otherwise indifference.
+* Includes FICI values and audit metadata in matrix CSV exports and MCP results.
+* Expands antibacterial, antifungal, and anticancer combination references.
 
 ## v2.1.4 Search Visibility Release
 
@@ -49,11 +56,12 @@ TyersChem2 development deployment: http://checkerboardr.198.58.117.28.nip.io/
 
 ---
 
-## 🚀 Key Features in v2.1.4
+## 🚀 Key Features in v2.1.5
 
 ### 1. Unified Synergy Modeling Engine
 * **4-Parameter Logistic (4PL) Hill Curves:** Fits dose-response levels natively, computing $EC_{50}$, Slope (Hill coefficient), $E_{max}$, and $E_{min}$ using R's numeric optimization.
 * **Synergy Models:** Computes **Highest Single Agent (HSA)**, **Bliss Independence**, **Loewe Additivity**, **Zero Interaction Potency (ZIP)**, and a conservative HSA/Bliss/Loewe **Consensus** landscape.
+* **Fractional Inhibitory Concentration Index:** Computes minimum **FICI (ΣFIC)** from wells reaching a configurable inhibition endpoint and reports the corresponding single-agent endpoint concentrations.
 * **Monotonic Linear Interpolation:** Fallback routines guarantee calculation completion even under highly noisy or partial data fits.
 * **Reference and Fitted Maps:** Switch between observed inhibition, model reference effect, synergy score, and ZIP fitted-response matrices without changing the underlying calculation.
 * **Replicate-aware Uncertainty:** Upload matched matrix files as independent replicates to calculate cell-level SD, SEM, and bootstrap 95% confidence intervals.
