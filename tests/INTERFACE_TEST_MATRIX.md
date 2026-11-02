@@ -16,6 +16,7 @@ Use this list for each release candidate. Record the deployed URL, commit, brows
 | UX-08 | Sample downloads and condition labels | 6 bundled downloads; underscore-derived JSON names; Excel metadata fallback | Correct filename/content; non-empty file; dynamic condition, axis, flip, and barometer labels | `npm run test:ux:sample-downloads` |
 | UX-09 | Publication exports | 3 static plot engines × PDF/SVG/EPS | Correct extension and vector signature; non-empty output; no browser or Shiny errors | `npm run test:ux:exports` |
 | UX-10 | MCP integration | Initialize/list; JSON/XML calculation; invalid format/path/tool | Valid requests generate PNG plots and summaries; malformed requests return structured errors without output | `npm run test:mcp` |
+| UX-11 | Search visibility | Canonical, title/description, robots, Open Graph, structured data, sitemap, static guide and preview image | All discovery metadata is present, valid and publicly retrievable | `npm run test:seo` |
 
 ## Numerical and manual release checks
 
