@@ -3,12 +3,23 @@
 
 CheckerBoardR.shiny analyzes drug combinations and performs checkerboard synergy calculations for antibiotic, antifungal, and cancer studies. It supports endpoint-based fractional inhibitory concentration indices (FICI), relative cell viability normalization, percent inhibition mapping, and multiple response-surface models.
 
-Online Portal: http://chemgrid.org:3838/checkerboardr/
+Online Portal: https://checkerboardr.chemgrid.org/
 
 TyersChem2 development deployment: http://checkerboardr.198.58.117.28.nip.io/
 
 ![CheckerBoardR 3D Plotly Synergy Surface](screenshot_3d_plotly.png)
-![CheckerBoardR Premium Data Visualization Interface](screenshot_data_visualization.png)
+![CheckerBoardR 2D Bliss Synergy Heatmap](https://raw.githubusercontent.com/wiki/jwildenhain/CheckerBoardR.shiny/images/plot-2d-heatmap.png)
+
+## Documentation
+
+The built-in [CheckerBoardR GitHub Wiki](https://github.com/jwildenhain/CheckerBoardR.shiny/wiki) contains the complete user and scientific documentation:
+
+* **[Wiki home](https://github.com/jwildenhain/CheckerBoardR.shiny/wiki):** application overview and documentation map.
+* **[Data input and preprocessing](https://github.com/jwildenhain/CheckerBoardR.shiny/wiki/Data-input-and-preprocessing):** checkerboard layout, upload formats, controls, replicates, baseline correction and FICI.
+* **[Plots and settings](https://github.com/jwildenhain/CheckerBoardR.shiny/wiki/Plots-and-settings):** cropped examples of every visualization engine and an explanation of each display control.
+* **[Algorithms and references](https://github.com/jwildenhain/CheckerBoardR.shiny/wiki/Algorithms-and-references):** HSA, Bliss, Loewe, ZIP, consensus, FICI and 4PL definitions with primary-paper links.
+* **[MCP setup and LLM workflow](https://github.com/jwildenhain/CheckerBoardR.shiny/wiki/MCP-setup-and-LLM-workflow):** configure an MCP client, load CSV data through an LLM console, choose a model and plot, and validate the result.
+* **[Installation guide](INSTALL.md):** native R, Docker, Shiny Server, MCP and test setup.
 
 ---
 
@@ -92,14 +103,19 @@ The 2D heatmap builds a vector of display values before applying the ggplot text
 * Excel samples can use a second `Conditions` worksheet with `Field` and `Value` columns. Rows named `Condition A` and `Condition B` provide condition names when the filename itself has no underscore pair.
 
 ### 5. Stdio Python MCP Server
-* Integrated [checkerboardr_mcp_server.py](checkerboardr_mcp_server.py), allowing LLM coding assistants to perform calculations, compute scores, and generate publication-ready plots programmatically.
+* Integrated [checkerboardr_mcp_server.py](checkerboardr_mcp_server.py), allowing LLM coding assistants to perform calculations, compute scores, report FICI, and generate publication-ready plots programmatically.
+* The MCP tool accepts JSON or XML. An LLM can read a CSV file, convert it without rounding to the documented payload, and request `2d_ggplot`, `1d_curves`, or `3d_base` output. See the [MCP workflow](https://github.com/jwildenhain/CheckerBoardR.shiny/wiki/MCP-setup-and-LLM-workflow).
 
 ### 6. Docker Containerization
 * Ships with a pre-configured [Dockerfile](Dockerfile) to build and deploy the R Shiny application in any containerized environment instantly.
 
 ---
 
-## 📦 Getting Started & Docker Deployment
+## 📦 Installation
+
+See [INSTALL.md](INSTALL.md) for native R, Docker, Shiny Server, MCP and test installation.
+
+### Quick Docker start
 
 To build and run the entire CheckerBoardR portal locally inside a container:
 
@@ -112,6 +128,14 @@ docker run -p 3839:3838 checkerboardr
 ```
 
 Access the app in your browser at **`http://localhost:3839`**.
+
+### Quick native R start
+
+```bash
+R -q -e "shiny::runApp('.', host='127.0.0.1', port=3838)"
+```
+
+Access the app at **`http://127.0.0.1:3838`**.
 
 ---
 
