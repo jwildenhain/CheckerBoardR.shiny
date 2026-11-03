@@ -197,7 +197,11 @@ async function run() {
     ...results.map(result => `- [${result.status === "passed" ? "x" : " "}] ${result.id}`), ``].join("\n");
   await fs.writeFile(path.join(ARTIFACT_DIR, "report.md"), markdown);
   console.log(`Summary: ${JSON.stringify(report.summary)}`);
-  if (report.summary.failed || events.some(event => event.type !== "requestfailed" || !event.message.includes("favicon"))) process.exitCode = 1;
+  const unexpectedEvents = events.filter(event =>
+    !/google-analytics\.com\/g\/collect/.test(event.message)
+    && (event.type !== "requestfailed" || !event.message.includes("favicon"))
+  );
+  if (report.summary.failed || unexpectedEvents.length) process.exitCode = 1;
 }
 
 run().catch(error => { console.error(error); process.exitCode = 1; });

@@ -92,7 +92,10 @@ async function run() {
     await browser.close();
   }
 
-  const unexpectedEvents = events.filter(event => event.type !== "requestfailed" || !event.message.includes("favicon"));
+  const unexpectedEvents = events.filter(event =>
+    !/google-analytics\.com\/g\/collect/.test(event.message)
+    && (event.type !== "requestfailed" || !event.message.includes("favicon"))
+  );
   const report = {
     baseURL: BASE_URL,
     generatedAt: new Date().toISOString(),

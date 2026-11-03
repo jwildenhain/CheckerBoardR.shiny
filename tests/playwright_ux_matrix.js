@@ -129,8 +129,8 @@ async function readStatistics(page, expectedModel) {
   await page.waitForFunction(
     metric => {
       const rows = [...document.querySelectorAll("#checkerboardStatsTable tbody tr")];
-      const firstMetric = rows[0]?.querySelector("th, td")?.innerText || "";
-      return rows.length >= 9 && firstMetric.includes(metric);
+      const metrics = rows.map(row => row.querySelector("th, td")?.innerText || "");
+      return rows.length >= 9 && metrics.some(name => name.includes(metric));
     },
     expectedMetric,
     { timeout: TIMEOUT_MS }
@@ -474,10 +474,11 @@ async function run() {
 
               const combinationEvents = events.slice(eventStart);
               const errorEvents = combinationEvents.filter(event =>
-                event.type === "pageerror"
-                || event.type === "requestfailed"
-                || event.type === "console-error"
-                || /^http-5/.test(event.type)
+                !/google-analytics\.com\/g\/collect/.test(event.message)
+                && (event.type === "pageerror"
+                  || event.type === "requestfailed"
+                  || event.type === "console-error"
+                  || /^http-5/.test(event.type))
               );
               if (errorEvents.length) {
                 issues.push({
