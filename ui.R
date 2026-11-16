@@ -28,6 +28,8 @@ shinyUI(fluidPage(
   
   # Include modern typography and high-end visual stylesheets
   tags$head(
+    tags$link(rel = "stylesheet", href = "plotly-loading.css"),
+    tags$script(src = "plotly-loading.js", defer = NA),
     tags$title("CheckerboardR — Free Drug Combination Synergy & Antagonism Calculator"),
     tags$meta(
       name = "description",
@@ -640,7 +642,13 @@ shinyUI(fluidPage(
                  # Dynamic render UI depending on selection
                  conditionalPanel(
                    condition = "input.plotEngine == '3d_plotly'",
-                   plotlyOutput("plotlyPlot", height = "550px")
+                   div(id = "plotly-container", `aria-busy` = "true",
+                     div(id = "plotly-loading", role = "status", `aria-live` = "polite",
+                       span(class = "plotly-loading-spinner", `aria-hidden` = "true"),
+                       span(id = "plotly-loading-message", "Loading interactive 3D plot…")
+                     ),
+                     plotlyOutput("plotlyPlot", height = "550px")
+                   )
                  ),
                  conditionalPanel(
                    condition = "input.plotEngine != '3d_plotly'",

@@ -10,6 +10,7 @@
     "test:ux:matrix": "node tests/playwright_ux_matrix.js",
     "test:ux:capabilities": "node tests/playwright_capabilities.js",
     "test:ux:exports": "node tests/playwright_exports.js",
+    "test:ux:plotly-loading": "node tests/playwright_plotly_loading.js",
     "test:mcp": "python3 tests/mcp_integration_test.py",
     "test:seo": "node tests/playwright_seo.js"
   },

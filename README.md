@@ -23,6 +23,14 @@ The built-in [CheckerBoardR GitHub Wiki](https://github.com/jwildenhain/CheckerB
 
 ---
 
+## Interactive Plotly loading improvements (16 November 2026)
+
+* Displays a spinner and “Loading interactive 3D plot…” while the first surface loads or an existing surface is recalculated.
+* After 15 seconds, explains that loading is still in progress and offers the 2D heatmap as an alternative. A lost connection prompts a page reload.
+* Updates rotation, elevation and zoom through Plotly camera relayout, preserving the existing surface and WebGL canvas instead of rebuilding them on every slider change.
+* Removes an artificial 150 ms pause from synergy calculations. The first 3D view can still take several seconds while calculations run and the browser downloads Plotly and initializes WebGL.
+* Verified locally and on TyersChem2 with an automated browser check covering a deliberately held Plotly download, loading completion, camera reuse and theme refresh. Cross-browser and mobile appearance have not been manually reviewed.
+
 ## v2.1.5 FICI and Scientific References Release
 
 * Calculates a dose-pair FICI matrix and minimum ΣFIC using a user-selectable inhibition endpoint.

@@ -151,16 +151,25 @@ CHECKERBOARDR_URL=http://127.0.0.1:3838 npm run test:ux:sample-downloads
 CHECKERBOARDR_URL=http://127.0.0.1:3838 npm run test:ux:matrix
 CHECKERBOARDR_URL=http://127.0.0.1:3838 npm run test:ux:capabilities
 CHECKERBOARDR_URL=http://127.0.0.1:3838 npm run test:ux:exports
+CHECKERBOARDR_URL=http://127.0.0.1:3838 npm run test:ux:plotly-loading
 CHECKERBOARDR_URL=http://127.0.0.1:3838 npm run test:seo
 ```
 
 Generated reports and screenshots are written below `test-results/` and are excluded from Git.
+
+The Plotly loading test holds the actual library download until it has checked the visible loading state. It then verifies that the indicator clears, camera updates reuse the surface and canvas, and a theme change refreshes the plot without leaving the indicator visible. Set `CHECKERBOARDR_URL=https://checkerboardr.chemgrid.org` to run this check against production.
 
 ## 7. Documentation
 
 User instructions, plot explanations, scientific references and the complete MCP/LLM console workflow are maintained in the repository's built-in [CheckerBoardR GitHub Wiki](https://github.com/jwildenhain/CheckerBoardR.shiny/wiki). The Wiki is versioned separately by GitHub and is intentionally not duplicated inside the application source tree.
 
 ## 8. Troubleshooting
+
+### Interactive 3D plot takes time to appear
+
+The first 3D view needs synergy calculations, the Plotly browser library and WebGL initialization. A spinner and “Loading interactive 3D plot…” message remain visible while it loads. After 15 seconds, the message suggests switching to the 2D heatmap while waiting. If the app reports a lost connection, reload the page to reconnect.
+
+Camera sliders update the existing surface without rebuilding it. Changes to the data, model, theme or axis flips still require a refreshed surface. Deploy `www/plotly-loading.js` and `www/plotly-loading.css` together with `ui.R` and `server.R`; the UI and server changes depend on these assets.
 
 ### R package load failure
 

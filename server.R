@@ -392,7 +392,6 @@ shinyServer(function(input, output, session) {
       res$axis_label_A <- condition_labels$axis_a
       res$axis_label_B <- condition_labels$axis_b
       setProgress(message = "Finalizing visualization grids...", value = 0.9)
-      Sys.sleep(0.15) # Brief pause so the progress bar is visible and satisfying
       res
     })
   })
@@ -449,15 +448,36 @@ shinyServer(function(input, output, session) {
       res, 
       input$synergyModel, 
       input$themePreset,
-      camera_theta = input$plotlyTheta,
-      camera_phi = input$plotlyPhi,
-      camera_zoom = input$plotlyZoom,
+      # Camera-only changes use relayout below, avoiding a rebuilt WebGL surface.
+      camera_theta = isolate(input$plotlyTheta),
+      camera_phi = isolate(input$plotlyPhi),
+      camera_zoom = isolate(input$plotlyZoom),
       flip_x = isTRUE(input$flipDataX),
       flip_y = isTRUE(input$flipDataY),
       flip_z = isTRUE(input$flipDataZ),
       value_type = input$plotValue
-    )
+    ) |> htmlwidgets::onRender("function(el) {
+      var ready = function() {
+        if (window.checkerboardPlotReady) window.checkerboardPlotReady();
+      };
+      el.on('plotly_afterplot', ready);
+      Promise.all(el._promises || []).then(function() {
+        requestAnimationFrame(function() { requestAnimationFrame(ready); });
+      });
+    }")
   })
+
+  observeEvent(list(input$plotlyTheta, input$plotlyPhi, input$plotlyZoom), {
+    req(input$plotEngine == "3d_plotly")
+    theta <- input$plotlyTheta * pi / 180
+    phi <- input$plotlyPhi * pi / 180
+    plotlyProxy("plotlyPlot", session) |>
+      plotlyProxyInvoke("relayout", list("scene.camera.eye" = list(
+        x = input$plotlyZoom * cos(phi) * sin(theta),
+        y = input$plotlyZoom * cos(phi) * cos(theta),
+        z = input$plotlyZoom * sin(phi)
+      )))
+  }, ignoreInit = TRUE)
   
   # *** Render modern 2D and 1D ggplot plots ***
   output$ggplotPlot <- renderPlot({
